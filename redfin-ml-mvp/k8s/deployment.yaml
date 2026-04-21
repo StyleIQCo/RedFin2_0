@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redfin-ml-api
+  namespace: applied-ml
+  labels:
+    app: redfin-ml-api
+    team: applied-ml
+spec:
+  # Start at 3 — AVM serves hundreds of millions of users; we never want <3.
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Key for zero-downtime model swaps: bring up new pods before killing old.
+      maxSurge: 2
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: redfin-ml-api
+  template:
+    metadata:
+      labels:
+        app: redfin-ml-api
+        team: applied-ml
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Spread across nodes + zones — availability over efficiency for serving.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: redfin-ml-api }
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: redfin-ml-api }
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: ghcr.io/redfin/redfin-ml-mvp:latest   # replaced by CI per-commit
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: redfin-ml-config }
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits:   { cpu: "2",     memory: "4Gi" }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 5
+          startupProbe:
+            # Model cold-start can be slow. Give it 2 minutes to warm.
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+            failureThreshold: 24
+          lifecycle:
+            preStop:
+              exec:
+                # Let in-flight requests drain. LB will stop sending new traffic.
+                command: ["sh", "-c", "sleep 10"]

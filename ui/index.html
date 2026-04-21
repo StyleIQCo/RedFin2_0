@@ -1,0 +1,1363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Redfin ML MVP — Live Demo</title>
+<style>
+:root {
+  --bg: #0b1220; --panel: #121a2c; --panel-2: #19253f; --panel-3: #0f1928;
+  --text: #e6edf7; --muted: #8a97b0;
+  --accent: #ff5a5f; --accent-2: #4f6bff; --accent-3: #a855f7;
+  --ok: #37d399; --warn: #f7b955; --alarm: #ff5a5f;
+  --border: #23314f;
+  --champ: #4f6bff; --chal: #f97316;
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif; line-height:1.45; }
+header { display:flex; align-items:center; justify-content:space-between; padding:18px 28px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,var(--panel),var(--panel-2)); }
+header h1 { margin:0; font-size:18px; letter-spacing:.3px; }
+header h1 span { color:var(--accent); }
+.env { font-size:12px; color:var(--muted); padding:4px 10px; border:1px solid var(--border); border-radius:20px; background:var(--panel); }
+nav { display:flex; padding:0 28px; background:var(--panel); border-bottom:1px solid var(--border); overflow-x:auto; }
+nav button { background:transparent; border:none; border-bottom:2px solid transparent; color:var(--muted); padding:12px 18px; font-size:13px; font-weight:500; cursor:pointer; margin-top:0; border-radius:0; white-space:nowrap; }
+nav button.active { color:var(--text); border-bottom-color:var(--accent); }
+nav button.agent-tab.active { border-bottom-color:var(--accent-3); color:var(--accent-3); }
+nav button.ab-tab.active { border-bottom-color:var(--champ); color:var(--champ); }
+nav button.data-tab.active { border-bottom-color:var(--ok); color:var(--ok); }
+nav button.neg-tab.active { border-bottom-color:var(--warn); color:var(--warn); }
+.tab-pane { display:none; } .tab-pane.active { display:block; }
+main { max-width:1320px; margin:0 auto; padding:24px 28px; display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.full { grid-column:1/-1; }
+@media(max-width:1000px){main{grid-template-columns:1fr;}.full{grid-column:1;}}
+.card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.card.agent-card { border-color:rgba(168,85,247,.3); }
+.card.ab-card { border-color:rgba(79,107,255,.3); }
+.card.data-card { border-color:rgba(55,211,153,.2); }
+.card h2 { margin:0 0 4px; font-size:16px; }
+.card .sub { color:var(--muted); font-size:12px; margin-bottom:14px; }
+.badge { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; margin-left:8px; vertical-align:middle; }
+.badge.purple { color:var(--accent-3); background:rgba(168,85,247,.12); border:1px solid rgba(168,85,247,.3); }
+.badge.blue { color:var(--champ); background:rgba(79,107,255,.1); border:1px solid rgba(79,107,255,.3); }
+.badge.green { color:var(--ok); background:rgba(55,211,153,.1); border:1px solid rgba(55,211,153,.3); }
+label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+select,input,textarea { width:100%; padding:9px 11px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); border-radius:7px; font-size:14px; }
+textarea { resize:vertical; min-height:80px; font-family:inherit; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.grid6 { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr);}.grid6{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:600px){.grid6{grid-template-columns:repeat(2,1fr);}}
+button { background:var(--accent); color:white; border:none; padding:10px 14px; border-radius:7px; font-weight:600; cursor:pointer; margin-top:14px; font-size:14px; }
+button.sec { background:var(--accent-2); }
+button.ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+button.agent { background:var(--accent-3); }
+button.ab { background:var(--champ); }
+button.ok-btn { background:var(--ok); color:#0b1220; }
+button:disabled { opacity:.6; cursor:not-allowed; }
+.pred-box { margin-top:18px; background:var(--panel-2); border-radius:9px; padding:16px 18px; border:1px solid var(--border); }
+.price { font-size:28px; font-weight:700; }
+.ci { color:var(--muted); font-size:13px; margin-top:4px; }
+.variant { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; background:var(--accent-2); color:white; margin-left:6px; }
+.variant.challenger { background:var(--warn); color:#21160b; }
+.narrative-box { margin-top:12px; padding:12px 14px; background:rgba(168,85,247,.07); border:1px solid rgba(168,85,247,.2); border-radius:8px; font-size:13px; line-height:1.6; }
+.narrative-box .nar-label { font-size:10px; color:var(--accent-3); font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+table { width:100%; border-collapse:collapse; margin-top:10px; font-size:13px; }
+th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); }
+th { color:var(--muted); font-weight:500; }
+td .reason { font-size:11px; color:var(--muted); }
+.drift-row { display:grid; grid-template-columns:1fr 80px 70px; gap:8px; align-items:center; padding:4px 0; font-size:13px; border-bottom:1px solid var(--border); }
+.sev { padding:2px 8px; border-radius:8px; font-size:11px; font-weight:600; text-align:center; }
+.sev.ok { background:rgba(55,211,153,.15); color:var(--ok); }
+.sev.warn { background:rgba(247,185,85,.15); color:var(--warn); }
+.sev.alarm { background:rgba(255,90,95,.15); color:var(--alarm); }
+.bar { background:var(--panel-2); height:6px; border-radius:4px; overflow:hidden; }
+.bar>div { height:100%; }
+.kpi { display:flex; gap:16px; flex-wrap:wrap; }
+.kpi .box { flex:1 1 120px; background:var(--panel-2); padding:12px 14px; border-radius:9px; border:1px solid var(--border); }
+.kpi .box .v { font-size:20px; font-weight:700; }
+.kpi .box .l { font-size:11px; color:var(--muted); margin-top:2px; }
+.contrib-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; color:var(--muted); }
+.contrib-row b { color:var(--text); font-weight:500; }
+.status { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--ok); margin-right:6px; }
+.status.down { background:var(--alarm); }
+.filter-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.chip { font-size:11px; padding:3px 10px; border-radius:20px; background:rgba(79,107,255,.12); border:1px solid rgba(79,107,255,.3); color:var(--accent-2); }
+.features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:10px 0; }
+.feat-item { background:var(--panel-3); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:12px; }
+.feat-item .fl { color:var(--muted); font-size:10px; }
+.feat-item .fv { font-weight:600; }
+.fw-badge { font-size:11px; padding:3px 10px; border-radius:6px; font-weight:600; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); }
+.fw-badge.openclaw { border-color:#22d3ee40; color:#22d3ee; background:rgba(34,211,238,.07); }
+.fw-badge.hermes { border-color:#f97316; color:#f97316; background:rgba(249,115,22,.07); }
+.agent-framework { display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+
+/* A/B specific */
+.ab-variant-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+.ab-box { background:var(--panel-2); border-radius:9px; padding:14px 16px; border:2px solid; }
+.ab-box.champ { border-color:rgba(79,107,255,.4); }
+.ab-box.chal { border-color:rgba(249,115,22,.4); }
+.ab-box .ab-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px; }
+.ab-box.champ .ab-label { color:var(--champ); }
+.ab-box.chal .ab-label { color:var(--chal); }
+.ab-box .ab-price { font-size:22px; font-weight:700; }
+.ab-box .ab-meta { font-size:11px; color:var(--muted); margin-top:4px; }
+.srm-pass { color:var(--ok); } .srm-fail { color:var(--alarm); }
+.lift-pos { color:var(--ok); } .lift-neg { color:var(--alarm); }
+.sig { font-size:11px; font-weight:600; padding:2px 8px; border-radius:8px; }
+.sig.yes { background:rgba(55,211,153,.15); color:var(--ok); }
+.sig.no { background:rgba(247,185,85,.12); color:var(--warn); }
+
+/* Progress bar for retrain */
+.progress-bar { height:6px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin:10px 0; }
+.progress-bar .fill { height:100%; background:linear-gradient(90deg,var(--champ),var(--accent-3)); animation:pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.7;} 50%{opacity:1;} }
+
+/* Feature distributions */
+.dist-row { display:grid; grid-template-columns:140px 1fr 1fr 70px; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid rgba(35,49,79,.6); font-size:12px; }
+.dist-row:last-child { border-bottom:none; }
+.dist-feat { color:var(--muted); font-size:11px; font-weight:500; }
+.dist-bar { display:flex; flex-direction:column; gap:3px; }
+.dist-bar .bl { font-size:10px; color:var(--muted); }
+.dist-bar .bbar { height:10px; border-radius:3px; }
+.dist-bar .bbar.ref { background:rgba(79,107,255,.5); }
+.dist-bar .bbar.cur { background:rgba(249,115,22,.5); }
+.dist-bar .bbar.cur.ok { background:rgba(55,211,153,.5); }
+.dist-bar .bbar.cur.warn { background:rgba(247,185,85,.5); }
+.dist-bar .bbar.cur.alarm { background:rgba(255,90,95,.5); }
+
+/* City cards */
+.city-card { background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.city-card .cn { font-size:14px; font-weight:600; margin-bottom:8px; }
+.city-card .cp { font-size:22px; font-weight:700; }
+.city-card .cm { font-size:11px; color:var(--muted); margin-top:2px; }
+.city-card .cstats { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:10px; }
+.city-card .cstat { font-size:11px; }
+.city-card .cstat .cl { color:var(--muted); }
+.city-bar-wrap { margin-top:8px; }
+.city-bar-label { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:2px; }
+.city-bar-track { height:4px; background:var(--panel-3); border-radius:3px; overflow:hidden; }
+.city-bar-track>div { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--champ),var(--accent-3)); }
+
+footer { text-align:center; color:var(--muted); font-size:11px; padding:24px; border-top:1px solid var(--border); margin-top:16px; }
+a { color:var(--accent-2); }
+.loading-dots::after { content:''; animation:dots 1.2s steps(3,end) infinite; }
+@keyframes dots { 0%,100%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+/* Negotiation tab */
+.neg-card { border-color:rgba(247,185,85,.3) !important; }
+.market-badge { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; padding:5px 14px; border-radius:20px; }
+.market-badge.hot  { background:rgba(255,90,95,.15);  color:var(--alarm); border:1px solid rgba(255,90,95,.4); }
+.market-badge.warm { background:rgba(247,185,85,.15); color:var(--warn);  border:1px solid rgba(247,185,85,.4); }
+.market-badge.cool { background:rgba(79,107,255,.15); color:var(--champ); border:1px solid rgba(79,107,255,.4); }
+.market-badge.cold { background:rgba(55,211,153,.1);  color:var(--ok);    border:1px solid rgba(55,211,153,.3); }
+.leverage-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; margin-left:8px; }
+.leverage-badge.seller  { background:rgba(255,90,95,.15);  color:var(--alarm); border:1px solid rgba(255,90,95,.4); }
+.leverage-badge.neutral { background:rgba(247,185,85,.12); color:var(--warn);  border:1px solid rgba(247,185,85,.3); }
+.leverage-badge.buyer   { background:rgba(55,211,153,.12); color:var(--ok);    border:1px solid rgba(55,211,153,.3); }
+.price-bar-wrap { margin:18px 0 10px; }
+.price-bar-track { position:relative; height:28px; background:var(--panel-2); border-radius:10px; border:1px solid var(--border); overflow:visible; }
+.price-bar-close { position:absolute; height:100%; border-radius:10px; background:rgba(247,185,85,.18); border:1px solid rgba(247,185,85,.3); }
+.price-bar-avm { position:absolute; width:3px; height:140%; top:-20%; background:var(--ok); border-radius:2px; transform:translateX(-50%); }
+.price-bar-avm::after { content:'AVM'; position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--ok); white-space:nowrap; font-weight:600; }
+.price-bar-pin { position:absolute; width:12px; height:140%; top:-20%; border-radius:3px; transform:translateX(-50%); }
+.price-bar-pin.buyer  { background:var(--champ); }
+.price-bar-pin.seller { background:var(--warn); }
+.price-bar-pin::after { position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; white-space:nowrap; font-weight:600; }
+.price-bar-pin.buyer::after  { content:'Bid'; color:var(--champ); }
+.price-bar-pin.seller::after { content:'List'; color:var(--warn); }
+.price-bar-labels { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:6px; }
+.neg-cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+@media(max-width:700px){ .neg-cols { grid-template-columns:1fr; } }
+.neg-side { background:var(--panel-2); border-radius:10px; padding:16px; border:2px solid; }
+.neg-side.buyer-side  { border-color:rgba(79,107,255,.4); }
+.neg-side.seller-side { border-color:rgba(247,185,85,.4); }
+.neg-side .ns-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; margin-bottom:8px; }
+.neg-side.buyer-side  .ns-label { color:var(--champ); }
+.neg-side.seller-side .ns-label { color:var(--warn); }
+.neg-side .ns-price { font-size:26px; font-weight:700; }
+.neg-side .ns-pct   { font-size:12px; color:var(--muted); margin-top:2px; }
+.neg-side .ns-tactic { margin-top:10px; font-size:12px; line-height:1.65; color:var(--text); padding:10px 12px; background:var(--panel-3); border-radius:7px; border:1px solid var(--border); }
+.factor-list { margin:14px 0 0; }
+.factor-item { display:grid; grid-template-columns:20px 1fr; gap:6px; align-items:start; padding:5px 0; border-bottom:1px solid rgba(35,49,79,.5); font-size:12px; }
+.factor-item:last-child { border-bottom:none; }
+.factor-icon { width:16px; height:16px; border-radius:50%; margin-top:1px; flex-shrink:0; }
+.factor-icon.seller  { background:rgba(255,90,95,.7); }
+.factor-icon.neutral { background:rgba(247,185,85,.7); }
+.factor-icon.buyer   { background:rgba(55,211,153,.7); }
+
+/* Property comparison */
+.compare-add-area { border:2px dashed var(--border); border-radius:10px; padding:14px; margin-top:14px; }
+.prop-slot { background:var(--panel-2); border-radius:9px; padding:14px; border:1px solid var(--border); margin-bottom:10px; position:relative; }
+.prop-slot .slot-title { font-size:12px; font-weight:600; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.4px; }
+.compare-result-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; margin-top:14px; }
+.compare-card { background:var(--panel-2); border-radius:10px; padding:16px; border:2px solid var(--border); position:relative; }
+.compare-card.winner { border-color:var(--warn) !important; }
+.compare-card .winner-badge { position:absolute; top:10px; right:10px; background:var(--warn); color:#1a0f00; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; }
+.compare-card .match-score { font-size:36px; font-weight:800; line-height:1; }
+.compare-card .match-label { font-size:10px; color:var(--muted); margin-bottom:10px; }
+.compare-card .rank-badge { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; margin-bottom:10px; }
+.score-dim { display:flex; justify-content:space-between; align-items:center; padding:3px 0; font-size:11px; }
+.score-dim .dn { color:var(--muted); width:90px; flex-shrink:0; }
+.score-bar { flex:1; height:6px; background:var(--panel-3); border-radius:3px; overflow:hidden; margin:0 8px; }
+.score-bar>div { height:100%; border-radius:3px; }
+.score-pct { width:30px; text-align:right; font-weight:600; font-size:11px; }
+.pros-cons { margin-top:10px; }
+.pros-cons .pc-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+.pros-cons .pc-item { font-size:11px; padding:2px 0; display:flex; gap:5px; align-items:start; }
+.compare-summary { background:rgba(247,185,85,.08); border:1px solid rgba(247,185,85,.25); border-radius:8px; padding:12px 14px; font-size:13px; margin-top:14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Redfin <span>ML</span> — Live Demo</h1>
+  <div><span class="status" id="status-dot"></span><span id="status-text">connecting…</span><span class="env" style="margin-left:12px" id="env-label">localhost:8000</span></div>
+</header>
+<nav>
+  <button class="active" onclick="switchTab('ml',this)">ML Platform</button>
+  <button class="agent-tab" onclick="switchTab('agent',this)">✦ AI Agents</button>
+  <button class="ab-tab" onclick="switchTab('ab',this)">⚗ A/B Testing</button>
+  <button class="data-tab" onclick="switchTab('data',this)">◎ Data Intelligence</button>
+  <button class="neg-tab" onclick="switchTab('neg',this)">⚑ Negotiate</button>
+</nav>
+
+<!-- ═══ TAB 1 — ML Platform ═══ -->
+<div class="tab-pane active" id="tab-ml">
+<main>
+  <section class="card">
+    <h2>Home Price Estimate (AVM)</h2>
+    <div class="sub">LightGBM + quantile twins · 90% CI · served from the production-stage registry model.</div>
+    <div class="grid2">
+      <div><label>City</label>
+        <select id="city"><option>Seattle</option><option>San Francisco</option><option>Los Angeles</option><option>Portland</option><option>Austin</option><option>Denver</option><option>Chicago</option><option>Boston</option><option>Washington DC</option><option>Atlanta</option><option>Dallas</option><option>Miami</option></select></div>
+      <div><label>Property type</label>
+        <select id="property_type"><option value="single_family">Single family</option><option value="condo">Condo</option><option value="townhouse">Townhouse</option><option value="multi_family">Multi-family</option></select></div>
+    </div>
+    <div class="grid3">
+      <div><label>Sqft</label><input id="sqft" type="number" value="2200"/></div>
+      <div><label>Beds</label><input id="beds" type="number" value="3"/></div>
+      <div><label>Baths</label><input id="baths" type="number" step="0.5" value="2.5"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Lot size</label><input id="lot_size" type="number" value="5000"/></div>
+      <div><label>Year built</label><input id="year_built" type="number" value="2005"/></div>
+      <div><label>Garage</label><input id="garage_spaces" type="number" value="2"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>School (1-10)</label><input id="school_score" type="number" step="0.1" value="7.5"/></div>
+      <div><label>Walk (0-100)</label><input id="walk_score" type="number" value="75"/></div>
+      <div><label>Crime (0-100↓)</label><input id="crime_index" type="number" step="0.1" value="35"/></div>
+    </div>
+    <button id="predict-btn">Estimate price</button>
+    <button id="predict-batch-btn" class="ghost">Batch (20)</button>
+    <div class="pred-box" id="pred-box" style="display:none">
+      <div><span class="price" id="price">—</span><span class="variant" id="variant">—</span><span style="float:right;color:var(--muted);font-size:12px" id="model-label"></span></div>
+      <div class="ci" id="ci">—</div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="color:var(--muted);font-size:11px;margin-bottom:6px">Feature contributions (log-price)</div>
+        <div id="contribs"></div>
+      </div>
+      <button id="explain-btn" class="agent" style="width:100%;margin-top:12px">✦ Explain this estimate (AI)</button>
+      <div id="explain-result"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card" style="margin-bottom:20px">
+      <h2>Similar Homes (Recommender)</h2>
+      <div class="sub">Content-based ANN · per-rec explanations · drives 27% of platform traffic.</div>
+      <div class="grid2">
+        <div><label>Listing ID</label><input id="listing-id" type="number" value="1"/></div>
+        <div><label>k recs</label><input id="rec-k" type="number" value="8"/></div>
+      </div>
+      <button id="rec-btn" class="sec">Get similar homes</button>
+      <div id="recs"></div>
+    </div>
+    <div class="card">
+      <h2>Model Health &amp; Drift</h2>
+      <div class="sub">PSI across all AVM features — the heartbeat of a healthy model in prod.</div>
+      <div class="kpi">
+        <div class="box"><div class="v" id="kpi-overall">—</div><div class="l">Overall severity</div></div>
+        <div class="box"><div class="v" id="kpi-maxpsi">—</div><div class="l">Max PSI</div></div>
+        <div class="box"><div class="v" id="kpi-feature">—</div><div class="l">Top drifting feature</div></div>
+        <div class="box"><div class="v" id="kpi-samples">—</div><div class="l">Samples seen</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button id="drift-btn" class="ghost">Refresh drift</button>
+        <button id="simulate-btn" class="ghost">Simulate shifted traffic</button>
+        <button id="triage-btn" class="agent">✦ AI Triage</button>
+      </div>
+      <div id="triage-result"></div>
+      <div style="margin-top:14px" id="drift-list"></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<!-- ═══ TAB 2 — AI Agents ═══ -->
+<div class="tab-pane" id="tab-agent">
+<main>
+  <section class="card agent-card">
+    <h2>Natural Language Search <span class="badge purple">✦ AI</span></h2>
+    <div class="sub">LLM parses your query into structured filters · then searches 50k listings.<br>
+      Powered by <span style="color:#22d3ee">OpenClaw</span> skill + <span style="color:#f97316">Hermes Agent</span> tool A.</div>
+    <label>Your search query</label>
+    <input id="nl-query" type="text" value="3 bedroom under $700k with good schools in Austin"/>
+    <button id="nl-search-btn" class="agent" style="width:100%">✦ Search</button>
+    <div id="nl-result"></div>
+    <div class="agent-framework">
+      <span class="fw-badge openclaw">OpenClaw</span><span class="fw-badge hermes">Hermes</span>
+      <span style="font-size:11px;color:var(--muted);align-self:center">→ <code>/v1/agent/nl-search</code></span>
+    </div>
+  </section>
+
+  <section class="card agent-card">
+    <h2>Listing Intelligence <span class="badge purple">✦ AI</span></h2>
+    <div class="sub">Paste MLS text → LLM extracts features → AVM prices it → Claude explains why.<br>
+      Powered by <span style="color:#f97316">Hermes Agent</span> Pattern B.</div>
+    <label>MLS listing description</label>
+    <textarea id="listing-text">Stunning 4BR/3BA craftsman in Capitol Hill, Seattle. 2,450 sqft of living space, gourmet kitchen, hardwood floors. Attached 2-car garage. Built 2008. Walk to coffee shops. School score 8.5/10. Low crime neighborhood.</textarea>
+    <button id="parse-listing-btn" class="agent" style="width:100%">✦ Extract &amp; Price</button>
+    <div id="parse-result"></div>
+    <div class="agent-framework">
+      <span class="fw-badge hermes">Hermes Agent</span>
+      <span style="font-size:11px;color:var(--muted);align-self:center">→ <code>/v1/agent/parse-listing</code></span>
+    </div>
+  </section>
+
+  <section class="card agent-card full">
+    <h2>Valuation Explainer <span class="badge purple">✦ AI</span></h2>
+    <div class="sub">Run a price estimate on the current home (ML Platform inputs), then get a plain-English explanation for a buyer.
+      Used in both <span style="color:#22d3ee">OpenClaw</span> Step 2 &amp; <span style="color:#f97316">Hermes</span> Pattern A.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="explain-standalone-btn" class="agent">✦ Price &amp; explain current home</button>
+      <span style="color:var(--muted);font-size:12px;align-self:center">Uses inputs from ML Platform tab</span>
+    </div>
+    <div id="explain-standalone-result"></div>
+    <div class="agent-framework">
+      <span class="fw-badge openclaw">OpenClaw</span><span class="fw-badge hermes">Hermes</span>
+      <span style="font-size:11px;color:var(--muted);align-self:center">→ <code>/v1/avm/predict</code> then <code>/v1/agent/explain</code></span>
+    </div>
+  </section>
+</main>
+</div>
+
+<!-- ═══ TAB 3 — A/B Testing & Lifecycle ═══ -->
+<div class="tab-pane" id="tab-ab">
+<main>
+
+  <!-- A/B results -->
+  <section class="card ab-card">
+    <h2>A/B Test Results <span class="badge blue">Live</span></h2>
+    <div class="sub">Welch t-test lift significance + chi-square SRM check. Updated on each prediction request.</div>
+    <div class="ab-variant-col">
+      <div class="ab-box champ">
+        <div class="ab-label">Champion</div>
+        <div class="ab-price" id="ab-champ-price">—</div>
+        <div class="ab-meta" id="ab-champ-meta">0 requests</div>
+      </div>
+      <div class="ab-box chal">
+        <div class="ab-label">Challenger</div>
+        <div class="ab-price" id="ab-chal-price">—</div>
+        <div class="ab-meta" id="ab-chal-meta">0 requests · not loaded</div>
+      </div>
+    </div>
+    <!-- Stats row -->
+    <div class="grid4" style="margin-top:14px">
+      <div class="kpi"><div class="box"><div class="v" id="ab-lift">—</div><div class="l">Lift %</div></div></div>
+      <div class="kpi"><div class="box"><div class="v" id="ab-pval">—</div><div class="l">p-value</div></div></div>
+      <div class="kpi"><div class="box"><div class="v" id="ab-sig">—</div><div class="l">Significant</div></div></div>
+      <div class="kpi"><div class="box"><div class="v" id="ab-srm">—</div><div class="l">SRM check</div></div></div>
+    </div>
+    <div id="ab-srm-detail" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+    <div id="ab-ci-detail" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button id="ab-refresh-btn" class="ghost">Refresh stats</button>
+      <button id="ab-traffic-btn" class="ab">Generate test traffic (200 req)</button>
+    </div>
+  </section>
+
+  <!-- Retrain pipeline -->
+  <section class="card ab-card">
+    <h2>Model Retraining Pipeline <span class="badge blue">CI/CD</span></h2>
+    <div class="sub">Train a challenger with different hyperparams · validation gate · auto-promote to staging · hot-load without restart.</div>
+    <div style="background:var(--panel-2);border-radius:8px;padding:12px;font-size:12px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><span style="color:var(--muted)">Champion params:</span><br>num_leaves=63, lr=0.05</div>
+        <div><span style="color:var(--muted)">Challenger params:</span><br>num_leaves=127, lr=0.04</div>
+      </div>
+      <div style="margin-top:8px;color:var(--muted)">Gate: MAPE &lt;18% &amp; 90% CI coverage &gt;80%</div>
+    </div>
+    <div id="pipeline-status" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="retrain-btn">🚀 Retrain Challenger</button>
+      <button id="load-chal-btn" class="ghost" disabled>⚡ Load Challenger</button>
+    </div>
+    <div id="retrain-result" style="margin-top:14px"></div>
+  </section>
+
+</main>
+</div>
+
+<!-- ═══ TAB 4 — Data Intelligence ═══ -->
+<div class="tab-pane" id="tab-data">
+<main>
+
+  <!-- Feature Store -->
+  <section class="card data-card full">
+    <h2>Feature Store: Training vs. Serving Distributions <span class="badge green">Skew Prevention</span></h2>
+    <div class="sub">
+      The #1 silent failure mode in production ML: training and serving distributions diverge.
+      Same <code>build_features()</code> function is called in both paths — this dashboard proves they stay aligned.
+      Orange bar = serving, blue = training reference. PSI badge shows drift severity.
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="display:flex;gap:16px;font-size:11px">
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:rgba(79,107,255,.5);vertical-align:middle;margin-right:4px"></span>Training reference</span>
+        <span><span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:rgba(249,115,22,.5);vertical-align:middle;margin-right:4px"></span>Live serving</span>
+      </div>
+      <button id="dist-refresh-btn" class="ghost" style="margin-top:0;padding:6px 12px;font-size:12px">Refresh</button>
+    </div>
+    <div id="dist-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Loading distributions…</div></div>
+  </section>
+
+  <!-- Market Intelligence -->
+  <section class="card data-card full">
+    <h2>Real Estate Market Intelligence <span class="badge green">50k Listings</span></h2>
+    <div class="sub">City-level aggregates: median price, price/sqft, school score, walk score, property mix.
+      Generated from the same training corpus the AVM was built on.</div>
+    <div id="market-grid"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Loading market data…</div></div>
+  </section>
+
+</main>
+</div>
+
+<!-- ═══ TAB 5 — Negotiation Intelligence ═══ -->
+<div class="tab-pane" id="tab-neg">
+<main>
+  <!-- Input form -->
+  <section class="card neg-card">
+    <h2>Negotiation Inputs <span class="badge" style="color:var(--warn);background:rgba(247,185,85,.1);border:1px solid rgba(247,185,85,.3)">⚑ Strategy</span></h2>
+    <div class="sub">Enter home details to get AVM-anchored bid and offer prices with live negotiation tactics.</div>
+
+    <div class="grid2">
+      <div><label>City</label>
+        <select id="neg-city">
+          <option>Seattle</option><option>San Francisco</option><option>Los Angeles</option>
+          <option>Portland</option><option>Austin</option><option>Denver</option>
+          <option>Chicago</option><option>Boston</option><option>Washington DC</option>
+          <option>Atlanta</option><option>Dallas</option><option>Miami</option>
+        </select>
+      </div>
+      <div><label>Property type</label>
+        <select id="neg-type">
+          <option value="single_family">Single family</option>
+          <option value="condo">Condo</option>
+          <option value="townhouse">Townhouse</option>
+          <option value="multi_family">Multi-family</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid3">
+      <div><label>Sqft</label><input id="neg-sqft" type="number" value="2200"/></div>
+      <div><label>Beds</label><input id="neg-beds" type="number" value="3"/></div>
+      <div><label>Baths</label><input id="neg-baths" type="number" step="0.5" value="2.5"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Lot size</label><input id="neg-lot" type="number" value="5000"/></div>
+      <div><label>Year built</label><input id="neg-year" type="number" value="2005"/></div>
+      <div><label>Garage</label><input id="neg-garage" type="number" value="2"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>School (1–10)</label><input id="neg-school" type="number" step="0.1" value="7.5"/></div>
+      <div><label>Walk score</label><input id="neg-walk" type="number" value="72"/></div>
+      <div><label>Crime index</label><input id="neg-crime" type="number" step="0.1" value="30"/></div>
+    </div>
+
+    <div style="margin:14px 0 4px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Optional market context (sharpens advice)</div>
+    <div class="grid3">
+      <div><label>Days on market</label><input id="neg-dom" type="number" placeholder="e.g. 45"/></div>
+      <div><label>Competing offers</label><input id="neg-offers" type="number" placeholder="e.g. 2"/></div>
+      <div><label>Asking price ($)</label><input id="neg-ask" type="number" placeholder="e.g. 850000"/></div>
+    </div>
+
+    <button id="neg-btn" style="width:100%;background:var(--warn);color:#1a0f00;font-weight:700" onclick="runNegotiation()">Analyze strategy</button>
+    <div id="neg-result"></div>
+  </section>
+
+  <!-- Property Comparison -->
+  <section class="card neg-card full">
+    <h2>Property Comparison <span class="badge" style="color:var(--warn);background:rgba(247,185,85,.1);border:1px solid rgba(247,185,85,.3)">Match Score</span></h2>
+    <div class="sub">Add 2–5 properties, set your preferences, and get ranked match scores across budget fit, size, neighborhood quality, and deal value.</div>
+
+    <!-- Buyer preferences strip -->
+    <div style="background:var(--panel-2);border-radius:9px;padding:14px 16px;border:1px solid var(--border);margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:10px">Buyer preferences</div>
+      <div class="grid3">
+        <div><label>Max budget ($)</label><input id="cmp-budget" type="number" value="950000"/></div>
+        <div><label>Min beds</label><input id="cmp-beds" type="number" value="3"/></div>
+        <div><label>Min baths</label><input id="cmp-baths" type="number" step="0.5" value="2"/></div>
+      </div>
+      <div class="grid3">
+        <div><label>Min school score</label><input id="cmp-school" type="number" step="0.1" value="7"/></div>
+        <div><label>Min walk score</label><input id="cmp-walk" type="number" value="50"/></div>
+        <div><label>Max crime index</label><input id="cmp-crime" type="number" value="50"/></div>
+      </div>
+      <div class="grid2">
+        <div><label>Preferred city (optional)</label>
+          <select id="cmp-city-pref">
+            <option value="">Any</option>
+            <option>Seattle</option><option>San Francisco</option><option>Los Angeles</option>
+            <option>Portland</option><option>Austin</option><option>Denver</option>
+            <option>Chicago</option><option>Boston</option><option>Washington DC</option>
+            <option>Atlanta</option><option>Dallas</option><option>Miami</option>
+          </select>
+        </div>
+        <div><label>Preferred type (optional)</label>
+          <select id="cmp-type-pref">
+            <option value="">Any</option>
+            <option value="single_family">Single family</option>
+            <option value="condo">Condo</option>
+            <option value="townhouse">Townhouse</option>
+            <option value="multi_family">Multi-family</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Lifestyle intent signals -->
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--warn);margin-bottom:10px">Lifestyle profile — re-weights scoring to your life</div>
+        <div class="grid3">
+          <div><label>Household size</label>
+            <select id="cmp-household">
+              <option value="1">1 person</option>
+              <option value="2" selected>2 people</option>
+              <option value="3">3 people</option>
+              <option value="4">4 people</option>
+              <option value="5">5+ people</option>
+            </select>
+          </div>
+          <div><label>Lifestyle style</label>
+            <select id="cmp-lifestyle">
+              <option value="suburban" selected>Suburban (space + safety)</option>
+              <option value="urban">Urban (walkability + transit)</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;padding-top:8px">
+            <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--text);cursor:pointer">
+              <input type="checkbox" id="cmp-children" style="width:auto"> Has children (↑ school weight)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--text);cursor:pointer">
+              <input type="checkbox" id="cmp-dogs" style="width:auto"> Has dogs (↑ yard need)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--text);cursor:pointer">
+              <input type="checkbox" id="cmp-wfh" style="width:auto"> Works from home (↑ bed count)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;color:var(--text);cursor:pointer">
+              <input type="checkbox" id="cmp-commute" style="width:auto"> Commute-sensitive (↑ walk score)
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Property slots -->
+    <div id="prop-slots">
+      <!-- Slot A -->
+      <div class="prop-slot" id="slot-0">
+        <div class="slot-title">Property A</div>
+        <div class="grid2">
+          <div><label>City</label>
+            <select class="s-city"><option>Seattle</option><option>San Francisco</option><option>Los Angeles</option><option>Portland</option><option>Austin</option><option>Denver</option><option>Chicago</option><option>Boston</option><option>Washington DC</option><option>Atlanta</option><option>Dallas</option><option>Miami</option></select></div>
+          <div><label>Type</label>
+            <select class="s-type"><option value="single_family">Single family</option><option value="condo">Condo</option><option value="townhouse">Townhouse</option><option value="multi_family">Multi-family</option></select></div>
+        </div>
+        <div class="grid4">
+          <div><label>Sqft</label><input class="s-sqft" type="number" value="2200"/></div>
+          <div><label>Beds</label><input class="s-beds" type="number" value="3"/></div>
+          <div><label>Baths</label><input class="s-baths" type="number" step="0.5" value="2.5"/></div>
+          <div><label>Year built</label><input class="s-year" type="number" value="2005"/></div>
+        </div>
+        <div class="grid4">
+          <div><label>School</label><input class="s-school" type="number" step="0.1" value="8.0"/></div>
+          <div><label>Walk</label><input class="s-walk" type="number" value="75"/></div>
+          <div><label>Crime</label><input class="s-crime" type="number" value="28"/></div>
+          <div><label>Asking ($)</label><input class="s-ask" type="number" placeholder="optional"/></div>
+        </div>
+      </div>
+      <!-- Slot B -->
+      <div class="prop-slot" id="slot-1">
+        <div class="slot-title">Property B</div>
+        <div class="grid2">
+          <div><label>City</label>
+            <select class="s-city"><option>Seattle</option><option selected>Austin</option><option>Los Angeles</option><option>Portland</option><option>San Francisco</option><option>Denver</option><option>Chicago</option><option>Boston</option><option>Washington DC</option><option>Atlanta</option><option>Dallas</option><option>Miami</option></select></div>
+          <div><label>Type</label>
+            <select class="s-type"><option value="single_family">Single family</option><option value="condo" selected>Condo</option><option value="townhouse">Townhouse</option><option value="multi_family">Multi-family</option></select></div>
+        </div>
+        <div class="grid4">
+          <div><label>Sqft</label><input class="s-sqft" type="number" value="1400"/></div>
+          <div><label>Beds</label><input class="s-beds" type="number" value="2"/></div>
+          <div><label>Baths</label><input class="s-baths" type="number" step="0.5" value="2"/></div>
+          <div><label>Year built</label><input class="s-year" type="number" value="2015"/></div>
+        </div>
+        <div class="grid4">
+          <div><label>School</label><input class="s-school" type="number" step="0.1" value="7.0"/></div>
+          <div><label>Walk</label><input class="s-walk" type="number" value="88"/></div>
+          <div><label>Crime</label><input class="s-crime" type="number" value="40"/></div>
+          <div><label>Asking ($)</label><input class="s-ask" type="number" placeholder="optional"/></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+      <button id="add-prop-btn" class="ghost" onclick="addPropertySlot()" style="margin-top:10px;font-size:13px">+ Add property (up to 5)</button>
+      <button id="compare-btn" style="background:var(--warn);color:#1a0f00;font-weight:700;margin-top:10px" onclick="runCompare()">Compare &amp; score</button>
+    </div>
+
+    <div id="compare-result"></div>
+  </section>
+
+  <!-- How it works -->
+  <section class="card neg-card" style="align-self:start">
+    <h2>How the strategy engine works</h2>
+    <div class="sub">AVM-anchored pricing with market-aware adjustments.</div>
+
+    <div style="font-size:13px;line-height:1.7;margin-top:10px">
+      <div style="margin-bottom:12px">
+        <span style="color:var(--ok);font-weight:600">1. AVM Anchor</span><br>
+        LightGBM predicts the objective fair value. Both buyer and seller prices are derived as percentages of this anchor — not of the asking price, which is biased.
+      </div>
+      <div style="margin-bottom:12px">
+        <span style="color:var(--warn);font-weight:600">2. Market condition</span><br>
+        City median price from 50k listings determines baseline temperature: Hot (&gt;$1.4M) → seller leverage, Cool (&lt;$500k) → buyer leverage. Buyer bids range from +3% (hot) to −10% (cold) of AVM.
+      </div>
+      <div style="margin-bottom:12px">
+        <span style="color:var(--champ);font-weight:600">3. Dynamic adjustments</span><br>
+        Days-on-market, competing offers, year built, school score, and walk score each shift the multipliers in real time. A 60-day listing shifts buyer leverage by −4%; 3+ competing offers shift seller leverage by +2.5%.
+      </div>
+      <div>
+        <span style="color:var(--accent-3);font-weight:600">4. Tactic narrative</span><br>
+        Claude generates buyer/seller advice when <code>ANTHROPIC_API_KEY</code> is set; a rule-based engine provides market-specific tactics offline.
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding:10px 12px;background:var(--panel-2);border-radius:8px;border:1px solid var(--border);font-size:11px">
+      <div style="color:var(--muted);margin-bottom:6px">Price multipliers by market condition</div>
+      <table style="font-size:11px;margin-top:0">
+        <thead><tr><th>Condition</th><th>Buyer bid</th><th>Seller list</th><th>Floor</th></tr></thead>
+        <tbody>
+          <tr><td>🔥 Hot</td><td>+3%</td><td>+7%</td><td>−2%</td></tr>
+          <tr><td>☀ Warm</td><td>0%</td><td>+3%</td><td>−4%</td></tr>
+          <tr><td>❄ Cool</td><td>−5%</td><td>0%</td><td>−9%</td></tr>
+          <tr><td>🧊 Cold</td><td>−10%</td><td>−5%</td><td>−13%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</div>
+
+<footer>
+  Redfin ML MVP — AVM · Recommender · AI Agents · A/B Testing · Data Intelligence · Negotiation.
+  API docs at <a id="api-docs" href="#" target="_blank">/docs</a>.
+</footer>
+
+<script>
+// ── Config ───────────────────────────────────────────────────────────────────
+const API = (() => { const u = new URL(location.href); return u.searchParams.get("api") || "http://localhost:8000"; })();
+document.getElementById("env-label").textContent = API.replace(/^https?:\/\//, "");
+document.getElementById("api-docs").href = API + "/docs";
+
+async function j(path, opts = {}) {
+  const r = await fetch(API + path, { headers: { "content-type": "application/json" }, ...opts });
+  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  return r.json();
+}
+const money = v => v == null ? "—" : "$" + Math.round(v).toLocaleString();
+const esc = s => String(s).replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+function narrativeBox(text) {
+  return `<div class="narrative-box"><div class="nar-label">✦ AI Explanation</div>${esc(text)}</div>`;
+}
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'data') { loadDistributions(); loadMarketIntelligence(); }
+  if (tab === 'ab') refreshABStats();
+}
+
+// ── Status ───────────────────────────────────────────────────────────────────
+async function updateStatus() {
+  try {
+    const h = await j("/healthz");
+    document.getElementById("status-dot").classList.toggle("down", h.status !== "ok");
+    document.getElementById("status-text").textContent =
+      `API ${h.status} — AVM v${h.avm_version ?? "?"}, Rec v${h.recommender_version ?? "?"}`;
+  } catch {
+    document.getElementById("status-dot").classList.add("down");
+    document.getElementById("status-text").textContent = "API unreachable";
+  }
+}
+updateStatus(); setInterval(updateStatus, 10_000);
+
+// ── Home features ─────────────────────────────────────────────────────────────
+function homePayload() {
+  return {
+    city: document.getElementById("city").value,
+    property_type: document.getElementById("property_type").value,
+    sqft: +document.getElementById("sqft").value,
+    beds: +document.getElementById("beds").value,
+    baths: +document.getElementById("baths").value,
+    lot_size: +document.getElementById("lot_size").value,
+    year_built: +document.getElementById("year_built").value,
+    garage_spaces: +document.getElementById("garage_spaces").value,
+    school_score: +document.getElementById("school_score").value,
+    walk_score: +document.getElementById("walk_score").value,
+    crime_index: +document.getElementById("crime_index").value,
+  };
+}
+
+// ══════════ TAB 1 — ML Platform ══════════════════════════════════════════════
+let _lastPred = null, _lastFeats = null;
+
+document.getElementById("predict-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.textContent = "Predicting…";
+  try {
+    const feats = homePayload();
+    const p = await j("/v1/avm/predict", { method:"POST", body:JSON.stringify(feats) });
+    _lastPred = p; _lastFeats = feats;
+    document.getElementById("pred-box").style.display = "block";
+    document.getElementById("explain-result").innerHTML = "";
+    document.getElementById("price").textContent = money(p.point);
+    document.getElementById("ci").textContent = `90% CI: ${money(p.lower)} – ${money(p.upper)}  ·  req ${p.request_id.slice(0,8)}`;
+    const vEl = document.getElementById("variant"); vEl.textContent = p.variant; vEl.className = "variant" + (p.variant === "challenger" ? " challenger" : "");
+    document.getElementById("model-label").textContent = `${p.model_name} v${p.model_version}`;
+    const sorted = Object.entries(p.feature_contributions).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,6);
+    document.getElementById("contribs").innerHTML = sorted.map(([k,v])=>`<div class="contrib-row"><b>${k}</b><span>${v>=0?"+":""}${v.toFixed(3)}</span></div>`).join("");
+  } catch(e){ alert("Predict failed: "+e.message); }
+  btn.disabled = false; btn.textContent = "Estimate price";
+});
+
+document.getElementById("predict-batch-btn").addEventListener("click", async () => {
+  const batch = { homes: Array.from({length:20},()=>{ const h=homePayload(); h.sqft=Math.round(h.sqft*(0.7+Math.random()*0.6)); h.beds=Math.max(1,Math.round(h.beds*(0.5+Math.random()))); return h; })};
+  try {
+    const r = await j("/v1/avm/batch", {method:"POST",body:JSON.stringify(batch)});
+    const prices = r.predictions.map(p=>p.point);
+    const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
+    alert(`Batch ${r.predictions.length} → avg ${money(avg)} (min ${money(Math.min(...prices))}, max ${money(Math.max(...prices))})`);
+  } catch(e){ alert("Batch failed: "+e.message); }
+});
+
+document.getElementById("explain-btn").addEventListener("click", async (e) => {
+  if (!_lastPred) { alert("Run a prediction first."); return; }
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Asking AI</span>';
+  try {
+    const r = await j("/v1/agent/explain", {method:"POST", body:JSON.stringify({features:_lastFeats, prediction:_lastPred})});
+    document.getElementById("explain-result").innerHTML = narrativeBox(r.narrative);
+  } catch(e){ document.getElementById("explain-result").innerHTML = `<div style="color:var(--alarm);font-size:12px;margin-top:8px">${esc(e.message)}</div>`; }
+  btn.disabled = false; btn.textContent = "✦ Explain this estimate (AI)";
+});
+
+document.getElementById("rec-btn").addEventListener("click", async () => {
+  try {
+    const r = await j("/v1/recommender/similar", {method:"POST", body:JSON.stringify({listing_id:+document.getElementById("listing-id").value, k:+document.getElementById("rec-k").value, same_city:true})});
+    document.getElementById("recs").innerHTML = `<table><thead><tr><th>Listing</th><th>Price</th><th>Layout</th><th>Sqft</th><th>Score</th></tr></thead><tbody>
+      ${r.recommendations.map(x=>`<tr><td><b>#${x.listing_id}</b><div class="reason">${x.reasons.join(" · ")}</div></td><td>${money(x.price)}</td><td>${x.beds}bd·${x.baths}ba</td><td>${x.sqft.toLocaleString()}</td><td>${(x.score*100).toFixed(1)}</td></tr>`).join("")}
+      </tbody></table>`;
+  } catch(e){ alert("Recs failed: "+e.message); }
+});
+
+async function refreshDrift() {
+  try {
+    const r = await j("/v1/drift/report");
+    const sev = r.overall_severity;
+    document.getElementById("kpi-overall").innerHTML = `<span class="sev ${sev}">${sev}</span>`;
+    document.getElementById("kpi-maxpsi").textContent = r.max_psi.toFixed(3);
+    document.getElementById("kpi-feature").textContent = r.max_psi_feature || "—";
+    document.getElementById("kpi-samples").textContent = (r.features[0]?.current_size||0).toLocaleString();
+    document.getElementById("drift-list").innerHTML = r.features.sort((a,b)=>b.psi-a.psi).map(f=>`
+      <div class="drift-row">
+        <div>${f.feature}</div>
+        <div class="bar"><div style="width:${Math.min(100,f.psi*200)}%;background:var(--${f.severity==='alarm'?'alarm':f.severity==='warn'?'warn':'ok'})"></div></div>
+        <div class="sev ${f.severity}" style="text-align:right">${f.psi.toFixed(3)}</div>
+      </div>`).join("");
+  } catch {
+    document.getElementById("drift-list").innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px 0">Need ≥30 recent predictions. Run a few estimates first.</div>`;
+  }
+}
+document.getElementById("drift-btn").addEventListener("click", refreshDrift);
+document.getElementById("simulate-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.textContent = "Simulating…";
+  for (let i=0;i<50;i++) { const h=homePayload(); h.sqft=Math.round(h.sqft*1.3); h.school_score=Math.max(1,h.school_score-2); h.crime_index=Math.min(95,h.crime_index+15); try{await j("/v1/avm/predict",{method:"POST",body:JSON.stringify(h)});}catch{} }
+  btn.disabled = false; btn.textContent = "Simulate shifted traffic";
+  await refreshDrift();
+});
+document.getElementById("triage-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Triaging</span>';
+  document.getElementById("triage-result").innerHTML = "";
+  try {
+    const r = await j("/v1/agent/triage", {method:"POST",body:"{}"});
+    document.getElementById("triage-result").innerHTML = narrativeBox(r.narrative);
+    await refreshDrift();
+  } catch(e){ document.getElementById("triage-result").innerHTML = `<div style="color:var(--muted);font-size:12px;margin-top:8px">${esc(e.message)}</div>`; }
+  btn.disabled = false; btn.textContent = "✦ AI Triage";
+});
+
+// ══════════ TAB 2 — AI Agents ════════════════════════════════════════════════
+document.getElementById("nl-search-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Searching</span>';
+  try {
+    const r = await j("/v1/agent/nl-search", {method:"POST", body:JSON.stringify({query:document.getElementById("nl-query").value.trim(), limit:10})});
+    const chips = Object.entries(r.parsed_filters).map(([k,v])=>`<span class="chip">${k.replace(/_/g,' ')}: ${v}</span>`).join("");
+    document.getElementById("nl-result").innerHTML = `
+      <div style="margin-top:12px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">Parsed filters (${r.result_count} results):</div>
+      <div class="filter-chips">${chips||'<span style="color:var(--muted);font-size:12px">no filters</span>'}</div></div>
+      ${r.results.length?`<table><thead><tr><th>City</th><th>Price</th><th>Layout</th><th>Sqft</th><th>Type</th><th>School</th></tr></thead><tbody>
+      ${r.results.map(x=>`<tr><td>${esc(x.city)}</td><td>${money(x.price)}</td><td>${x.beds}bd·${x.baths}ba</td><td>${x.sqft.toLocaleString()}</td><td>${esc(x.property_type.replace(/_/g,' '))}</td><td>${x.school_score.toFixed(1)}</td></tr>`).join("")}
+      </tbody></table>`:'<div style="color:var(--muted);font-size:13px;margin-top:12px">No results matched.</div>'}`;
+  } catch(e){ document.getElementById("nl-result").innerHTML = `<div style="color:var(--alarm);font-size:12px;margin-top:8px">${esc(e.message)}</div>`; }
+  btn.disabled = false; btn.textContent = "✦ Search";
+});
+
+document.getElementById("parse-listing-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Extracting</span>';
+  try {
+    const r = await j("/v1/agent/parse-listing", {method:"POST", body:JSON.stringify({text:document.getElementById("listing-text").value.trim()})});
+    const f=r.features, p=r.prediction;
+    document.getElementById("parse-result").innerHTML = `
+      <div style="margin-top:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Extracted</div>
+        <div class="features-grid">${[['City',f.city],['Type',f.property_type.replace(/_/g,' ')],['Sqft',f.sqft.toLocaleString()],['Beds',f.beds],['Baths',f.baths],['Year',f.year_built],['Garage',f.garage_spaces+' car'],['School',f.school_score+'/10'],['Walk',f.walk_score]].map(([l,v])=>`<div class="feat-item"><div class="fl">${l}</div><div class="fv">${esc(String(v))}</div></div>`).join("")}</div>
+        <div class="pred-box" style="margin-top:10px"><span class="price">${money(p.point)}</span><div class="ci">90% CI: ${money(p.lower)} – ${money(p.upper)}</div></div>
+        ${narrativeBox(r.narrative)}</div>`;
+  } catch(e){ document.getElementById("parse-result").innerHTML = `<div style="color:var(--alarm);font-size:12px;margin-top:8px">${esc(e.message)}</div>`; }
+  btn.disabled = false; btn.textContent = "✦ Extract & Price";
+});
+
+document.getElementById("explain-standalone-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Pricing</span>';
+  try {
+    const feats = homePayload();
+    const pred = await j("/v1/avm/predict", {method:"POST", body:JSON.stringify(feats)});
+    const expl = await j("/v1/agent/explain", {method:"POST", body:JSON.stringify({features:feats, prediction:pred})});
+    document.getElementById("explain-standalone-result").innerHTML = `
+      <div class="pred-box" style="margin-top:14px"><span class="price">${money(pred.point)}</span><span class="variant">${esc(pred.variant)}</span><div class="ci">90% CI: ${money(pred.lower)} – ${money(pred.upper)}</div></div>
+      ${narrativeBox(expl.narrative)}`;
+  } catch(e){ document.getElementById("explain-standalone-result").innerHTML = `<div style="color:var(--alarm);font-size:12px;margin-top:8px">${esc(e.message)}</div>`; }
+  btn.disabled = false; btn.textContent = "✦ Price & explain current home";
+});
+
+// ══════════ TAB 3 — A/B Testing ══════════════════════════════════════════════
+async function refreshABStats() {
+  try {
+    const r = await j("/v1/ab/results");
+    const ch = r.champion, ca = r.challenger;
+    document.getElementById("ab-champ-price").textContent = money(ch.mean_price);
+    document.getElementById("ab-champ-meta").textContent = `v${ch.version} · ${ch.n} req${ch.n!==1?'s':''}${ch.std_price?` · σ=${money(ch.std_price)}`:''}`;
+    document.getElementById("ab-chal-price").textContent = ca.mean_price != null ? money(ca.mean_price) : "—";
+    document.getElementById("ab-chal-meta").textContent = ca.n > 0
+      ? `v${ca.version} · ${ca.n} req${ca.n!==1?'s':''}${ca.std_price?` · σ=${money(ca.std_price)}`:''}`
+      : (r.config.challenger_loaded ? `v${ca.version} · 0 requests yet` : "not loaded — retrain first");
+
+    if (r.lift_pct != null) {
+      const liftEl = document.getElementById("ab-lift");
+      liftEl.textContent = (r.lift_pct > 0 ? "+" : "") + r.lift_pct.toFixed(2) + "%";
+      liftEl.className = "v " + (r.lift_pct >= 0 ? "lift-pos" : "lift-neg");
+    } else { document.getElementById("ab-lift").textContent = "—"; }
+
+    document.getElementById("ab-pval").textContent = r.p_value != null ? r.p_value.toFixed(4) : "—";
+    if (r.significant != null) {
+      document.getElementById("ab-sig").innerHTML = r.significant ? '<span class="sig yes">Yes ✓</span>' : '<span class="sig no">No</span>';
+    } else { document.getElementById("ab-sig").textContent = "—"; }
+
+    if (r.srm_check) {
+      const srm = r.srm_check;
+      const cl = srm.passed ? "srm-pass" : "srm-fail";
+      document.getElementById("ab-srm").innerHTML = `<span class="${cl}">${srm.passed ? "✓ Pass" : "✗ Fail"}</span>`;
+      document.getElementById("ab-srm-detail").textContent = `Expected ${srm.expected} · Actual ${srm.actual} · χ²=${srm.chi2} · p=${srm.p_value}`;
+    } else { document.getElementById("ab-srm").textContent = "—"; document.getElementById("ab-srm-detail").textContent = "Need challenger traffic for SRM check."; }
+
+    if (r.ci_95) {
+      document.getElementById("ab-ci-detail").textContent =
+        `95% CI on mean difference: [${money(r.ci_95.lower)}, ${money(r.ci_95.upper)}]`;
+    } else { document.getElementById("ab-ci-detail").textContent = ""; }
+
+    // Enable load-challenger if staging exists
+    if (r.config.challenger_loaded) {
+      document.getElementById("load-chal-btn").disabled = false;
+    }
+  } catch(e) { console.warn("AB stats:", e.message); }
+}
+
+document.getElementById("ab-refresh-btn").addEventListener("click", refreshABStats);
+
+document.getElementById("ab-traffic-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Generating traffic</span>';
+  try {
+    const r = await j("/v1/ab/generate-traffic", {method:"POST", body:"{}"});
+    await refreshABStats();
+    document.getElementById("ab-srm-detail").textContent += ` · Generated: ${r.generated} requests (champion: ${r.champion_n}, challenger: ${r.challenger_n})`;
+  } catch(e){ alert("Traffic gen failed: " + e.message); }
+  btn.disabled = false; btn.textContent = "Generate test traffic (200 req)";
+});
+
+// Retrain pipeline
+let _retrainJobId = null;
+let _pollInterval = null;
+
+document.getElementById("retrain-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Starting retrain</span>';
+  document.getElementById("retrain-result").innerHTML = "";
+  document.getElementById("pipeline-status").innerHTML = `
+    <div class="progress-bar"><div class="fill" style="width:100%"></div></div>
+    <div style="font-size:12px;color:var(--muted)">Training LightGBM challenger (num_leaves=127) on 42,500 rows…</div>`;
+  try {
+    const r = await j("/v1/ops/retrain", {method:"POST", body:"{}"});
+    _retrainJobId = r.job_id;
+    _pollInterval = setInterval(pollRetrain, 2000);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "🚀 Retrain Challenger";
+    document.getElementById("pipeline-status").innerHTML = `<div style="color:var(--alarm);font-size:12px">${esc(e.message)}</div>`;
+  }
+});
+
+async function pollRetrain() {
+  if (!_retrainJobId) return;
+  try {
+    const job = await j(`/v1/ops/retrain/${_retrainJobId}`);
+    if (job.status === "running") return; // still running
+    clearInterval(_pollInterval); _pollInterval = null;
+    document.getElementById("retrain-btn").disabled = false;
+    document.getElementById("retrain-btn").textContent = "🚀 Retrain Challenger";
+
+    if (job.status === "completed" && job.gate_passed) {
+      const m = job.metrics;
+      document.getElementById("pipeline-status").innerHTML =
+        `<div style="color:var(--ok);font-size:12px">✓ Gate passed in ${job.elapsed_s}s</div>`;
+      document.getElementById("retrain-result").innerHTML = `
+        <div style="background:rgba(55,211,153,.07);border:1px solid rgba(55,211,153,.2);border-radius:8px;padding:12px;font-size:13px">
+          <div style="font-weight:600;margin-bottom:8px">Challenger v${job.version} → staging</div>
+          <div class="grid3">
+            <div><span style="color:var(--muted);font-size:11px">MAPE</span><br><b>${(m.mape*100).toFixed(1)}%</b></div>
+            <div><span style="color:var(--muted);font-size:11px">Median APE</span><br><b>${(m.median_ape*100).toFixed(1)}%</b></div>
+            <div><span style="color:var(--muted);font-size:11px">90% CI Coverage</span><br><b>${(m.p90_coverage*100).toFixed(1)}%</b></div>
+          </div>
+        </div>`;
+      document.getElementById("load-chal-btn").disabled = false;
+    } else {
+      document.getElementById("pipeline-status").innerHTML =
+        `<div style="color:var(--alarm);font-size:12px">✗ ${job.status === "completed" ? "Gate failed" : "Error"}: ${esc(job.reason || job.error || "unknown")}</div>`;
+    }
+  } catch(e) { console.warn("Poll retrain:", e); }
+}
+
+document.getElementById("load-chal-btn").addEventListener("click", async (e) => {
+  const btn = e.target; btn.disabled = true; btn.textContent = "Loading…";
+  try {
+    const r = await j("/v1/ops/load-challenger", {method:"POST", body:"{}"});
+    document.getElementById("retrain-result").innerHTML += `
+      <div style="margin-top:10px;padding:10px 12px;background:rgba(79,107,255,.08);border:1px solid rgba(79,107,255,.3);border-radius:8px;font-size:13px">
+        <div style="color:var(--champ);font-weight:600">⚡ Challenger v${r.challenger_version} active</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:4px">${esc(r.message)}</div>
+      </div>`;
+    btn.textContent = "✓ Loaded";
+    await refreshABStats();
+  } catch(e) { btn.disabled = false; btn.textContent = "⚡ Load Challenger"; alert(e.message); }
+});
+
+// ══════════ TAB 4 — Data Intelligence ════════════════════════════════════════
+async function loadDistributions() {
+  const el = document.getElementById("dist-list");
+  try {
+    const r = await j("/v1/feature-store/distributions");
+    if (!r.features.length) { el.innerHTML = '<div style="color:var(--muted)">No data.</div>'; return; }
+    const header = `<div class="dist-row" style="border-bottom:2px solid var(--border);padding-bottom:8px">
+      <div style="font-size:11px;color:var(--muted);font-weight:600">FEATURE</div>
+      <div style="font-size:11px;color:var(--muted)">Training (ref: ${r.reference_size.toLocaleString()})</div>
+      <div style="font-size:11px;color:var(--muted)">Serving (cur: ${r.current_size.toLocaleString()})</div>
+      <div style="font-size:11px;color:var(--muted)">PSI</div>
+    </div>`;
+    const rows = r.features.map(f => {
+      const ref = f.reference;
+      const cur = f.current;
+      const range = ref ? ref.p95 - ref.p5 : 1;
+      function barHtml(stats, cls) {
+        if (!stats) return `<div class="dist-bar"><div class="bl">no data</div><div class="bbar ${cls}" style="width:0%"></div></div>`;
+        const w25 = Math.max(1, Math.round((stats.p25 - ref.p5) / range * 100));
+        const w75 = Math.max(1, Math.round((stats.p75 - ref.p5) / range * 100));
+        const wm  = Math.max(1, Math.round((stats.p50 - ref.p5) / range * 100));
+        return `<div class="dist-bar">
+          <div class="bl">μ=${stats.mean.toFixed(1)} · p50=${stats.p50.toFixed(1)} · σ=${stats.std.toFixed(1)}</div>
+          <div style="position:relative;height:10px;background:var(--panel-3);border-radius:3px">
+            <div style="position:absolute;left:${w25}%;width:${Math.max(1,w75-w25)}%;height:100%;border-radius:3px" class="bbar ${cls} ${f.severity||'ok'}"></div>
+            <div style="position:absolute;left:${wm}%;width:2px;height:100%;background:rgba(255,255,255,.6);border-radius:1px"></div>
+          </div></div>`;
+      }
+      const sevBadge = f.psi != null
+        ? `<span class="sev ${f.severity}">${f.psi.toFixed(3)}</span>`
+        : `<span style="color:var(--muted);font-size:11px">—</span>`;
+      return `<div class="dist-row">
+        <div class="dist-feat">${f.feature}</div>
+        <div>${barHtml(ref, 'ref')}</div>
+        <div>${barHtml(cur, 'cur')}</div>
+        <div>${sevBadge}</div>
+      </div>`;
+    }).join("");
+    el.innerHTML = header + rows;
+  } catch(e) { el.innerHTML = `<div style="color:var(--alarm);font-size:12px">${esc(e.message)}</div>`; }
+}
+
+document.getElementById("dist-refresh-btn").addEventListener("click", () => {
+  document.getElementById("dist-list").innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Refreshing…</div>';
+  loadDistributions();
+});
+
+async function loadMarketIntelligence() {
+  const el = document.getElementById("market-grid");
+  try {
+    const r = await j("/v1/market/intelligence");
+    const maxPrice = Math.max(...r.cities.map(c=>c.median_price));
+    const cards = r.cities.map(c => {
+      const pct = Math.round(c.median_price / maxPrice * 100);
+      const ptBar = Object.entries(c.property_type_pct).map(([type, pctVal]) => {
+        const colors = {single_family:'var(--champ)',condo:'var(--accent-3)',townhouse:'var(--ok)',multi_family:'var(--warn)'};
+        const col = colors[type] || 'var(--muted)';
+        return `<span title="${type}: ${pctVal}%" style="display:inline-block;width:${pctVal}%;height:4px;background:${col};vertical-align:middle"></span>`;
+      }).join("");
+      return `<div class="city-card">
+        <div class="cn">${esc(c.city)}</div>
+        <div class="cp">${money(c.median_price)}</div>
+        <div class="cm">${money(c.median_price_per_sqft)}/sqft · ${c.listing_count.toLocaleString()} listings</div>
+        <div class="city-bar-wrap">
+          <div class="city-bar-label"><span>Market tier</span><span>${pct}%</span></div>
+          <div class="city-bar-track"><div style="width:${pct}%"></div></div>
+        </div>
+        <div class="cstats">
+          <div class="cstat"><div class="cl">School score</div><b>${c.median_school_score}</b>/10</div>
+          <div class="cstat"><div class="cl">Walk score</div><b>${c.median_walk_score}</b></div>
+          <div class="cstat"><div class="cl">Median sqft</div><b>${c.median_sqft.toLocaleString()}</b></div>
+          <div class="cstat"><div class="cl">Crime index</div><b>${c.median_crime_index}</b></div>
+        </div>
+        <div style="margin-top:8px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px">Property mix</div>
+          <div style="height:4px;background:var(--panel-3);border-radius:2px;overflow:hidden">${ptBar}</div>
+          <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+            ${Object.entries(c.property_type_pct).map(([t,p])=>`<span style="font-size:9px;color:var(--muted)">${t.replace('_',' ')}: ${p}%</span>`).join("")}
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="grid6">${cards}</div>
+      <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">${r.total_listings.toLocaleString()} total listings · sorted by median price</div>`;
+  } catch(e) { el.innerHTML = `<div style="color:var(--alarm);font-size:12px">${esc(e.message)}</div>`; }
+}
+
+// ── Property Comparison ────────────────────────────────────────────────────────
+const SLOT_LETTERS = ["A","B","C","D","E"];
+let _slotCount = 2;
+
+function addPropertySlot() {
+  if (_slotCount >= 5) return;
+  const letter = SLOT_LETTERS[_slotCount];
+  const slot = document.createElement("div");
+  slot.className = "prop-slot";
+  slot.id = `slot-${_slotCount}`;
+  slot.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="slot-title">Property ${letter}</div>
+      <button class="ghost" style="margin:0;padding:3px 10px;font-size:11px" onclick="removeSlot(${_slotCount})">Remove</button>
+    </div>
+    <div class="grid2">
+      <div><label>City</label>
+        <select class="s-city"><option>Seattle</option><option>San Francisco</option><option>Los Angeles</option><option>Portland</option><option>Austin</option><option>Denver</option><option>Chicago</option><option>Boston</option><option>Washington DC</option><option>Atlanta</option><option>Dallas</option><option>Miami</option></select></div>
+      <div><label>Type</label>
+        <select class="s-type"><option value="single_family">Single family</option><option value="condo">Condo</option><option value="townhouse">Townhouse</option><option value="multi_family">Multi-family</option></select></div>
+    </div>
+    <div class="grid4">
+      <div><label>Sqft</label><input class="s-sqft" type="number" value="2000"/></div>
+      <div><label>Beds</label><input class="s-beds" type="number" value="3"/></div>
+      <div><label>Baths</label><input class="s-baths" type="number" step="0.5" value="2"/></div>
+      <div><label>Year built</label><input class="s-year" type="number" value="2000"/></div>
+    </div>
+    <div class="grid4">
+      <div><label>School</label><input class="s-school" type="number" step="0.1" value="7"/></div>
+      <div><label>Walk</label><input class="s-walk" type="number" value="60"/></div>
+      <div><label>Crime</label><input class="s-crime" type="number" value="35"/></div>
+      <div><label>Asking ($)</label><input class="s-ask" type="number" placeholder="optional"/></div>
+    </div>`;
+  document.getElementById("prop-slots").appendChild(slot);
+  _slotCount++;
+  document.getElementById("add-prop-btn").disabled = _slotCount >= 5;
+}
+
+function removeSlot(idx) {
+  const slot = document.getElementById(`slot-${idx}`);
+  if (slot) slot.remove();
+  document.getElementById("add-prop-btn").disabled = false;
+}
+
+function _readSlots() {
+  const slots = document.querySelectorAll(".prop-slot");
+  const props = [], asks = [];
+  slots.forEach(s => {
+    const g = cls => s.querySelector(cls);
+    const ask = g(".s-ask") ? +g(".s-ask").value || null : null;
+    asks.push(ask);
+    props.push({
+      city:          g(".s-city").value,
+      property_type: g(".s-type").value,
+      sqft:          +g(".s-sqft").value,
+      beds:          +g(".s-beds").value,
+      baths:         +g(".s-baths").value,
+      lot_size:      0,
+      year_built:    +g(".s-year").value,
+      garage_spaces: 0,
+      school_score:  +g(".s-school").value,
+      walk_score:    +g(".s-walk").value,
+      crime_index:   +g(".s-crime").value,
+    });
+  });
+  return { props, asks };
+}
+
+async function runCompare() {
+  const btn = document.getElementById("compare-btn");
+  const out = document.getElementById("compare-result");
+  btn.disabled = true; btn.textContent = "Scoring…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-top:14px" class="loading-dots">Running AVM on each property</div>`;
+
+  try {
+    const { props, asks } = _readSlots();
+    if (props.length < 2) throw new Error("Add at least 2 properties to compare");
+
+    const payload = {
+      preferences: {
+        max_budget:              +document.getElementById("cmp-budget").value,
+        min_beds:                +document.getElementById("cmp-beds").value,
+        min_baths:               +document.getElementById("cmp-baths").value,
+        min_school_score:        +document.getElementById("cmp-school").value,
+        min_walk_score:          +document.getElementById("cmp-walk").value,
+        max_crime_index:         +document.getElementById("cmp-crime").value,
+        preferred_city:          document.getElementById("cmp-city-pref").value || null,
+        preferred_property_type: document.getElementById("cmp-type-pref").value || null,
+        lifestyle: {
+          household_size:    +document.getElementById("cmp-household").value,
+          lifestyle_type:    document.getElementById("cmp-lifestyle").value,
+          has_children:      document.getElementById("cmp-children").checked,
+          has_dogs:          document.getElementById("cmp-dogs").checked,
+          work_from_home:    document.getElementById("cmp-wfh").checked,
+          commute_sensitive: document.getElementById("cmp-commute").checked,
+        },
+      },
+      properties: props,
+      asking_prices: asks,
+    };
+
+    const r = await j("/v1/negotiation/compare", {method:"POST",body:JSON.stringify(payload)});
+
+    const scoreColor = v => v >= 80 ? "var(--ok)" : v >= 60 ? "var(--warn)" : "var(--alarm)";
+    const dimBar = (label, val) => `
+      <div class="score-dim">
+        <span class="dn">${label}</span>
+        <div class="score-bar"><div style="width:${val}%;background:${scoreColor(val)}"></div></div>
+        <span class="score-pct" style="color:${scoreColor(val)}">${val.toFixed(0)}</span>
+      </div>`;
+
+    // Sort cards by rank to show winner first
+    const sorted = [...r.properties].sort((a,b) => a.rank - b.rank);
+
+    const cards = sorted.map(p => {
+      const letter = SLOT_LETTERS[p.index];
+      const scoreClr = scoreColor(p.match_pct);
+      const prosHTML = p.pros.map(t=>`<div class="pc-item"><span style="color:var(--ok)">✓</span>${esc(t)}</div>`).join("");
+      const consHTML = p.cons.map(t=>`<div class="pc-item"><span style="color:var(--alarm)">✗</span>${esc(t)}</div>`).join("");
+      const rankColors = ["var(--warn)","var(--muted)","rgba(100,100,150,.8)","rgba(80,80,80,.8)","rgba(60,60,60,.8)"];
+      return `<div class="compare-card ${p.winner?'winner':''}">
+        ${p.winner ? '<span class="winner-badge">★ Best Match</span>' : ''}
+        <div style="margin-bottom:6px">
+          <span class="rank-badge" style="background:${rankColors[p.rank-1]}22;color:${rankColors[p.rank-1]};border:1px solid ${rankColors[p.rank-1]}44">
+            #${p.rank} of ${r.properties.length}
+          </span>
+        </div>
+        <div class="match-score" style="color:${scoreClr}">${p.match_pct.toFixed(0)}</div>
+        <div class="match-label">match score / 100 &nbsp;·&nbsp; Property ${letter}</div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">${esc(p.city)} · ${p.property_type.replace(/_/g,' ')}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+          AVM: <b style="color:var(--text)">${money(p.avm_estimate)}</b>
+          ${p.asking_price ? ` · Ask: ${money(p.asking_price)}` : ""}
+          <br>Bid: <span style="color:var(--champ);font-weight:600">${money(p.buyer_bid)}</span>
+        </div>
+        ${dimBar("Budget fit",  p.scores.budget)}
+        ${dimBar("Size fit",    p.scores.size)}
+        ${dimBar("Neighborhood",p.scores.neighborhood)}
+        ${dimBar("Deal value",  p.scores.value)}
+        <div class="pros-cons" style="margin-top:10px">
+          ${prosHTML ? `<div class="pc-label" style="color:var(--ok)">Pros</div>${prosHTML}` : ""}
+          ${consHTML ? `<div class="pc-label" style="color:var(--alarm);margin-top:6px">Cons</div>${consHTML}` : ""}
+        </div>
+      </div>`;
+    }).join("");
+
+    out.innerHTML = `
+      <div class="compare-summary">⚑ ${esc(r.summary)}</div>
+      <div class="compare-result-grid">${cards}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+        Scores: Budget 35% · Size 25% · Neighborhood 25% · Deal value 15% · preferred city/type bonuses up to +10pt
+      </div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:12px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Compare & score";
+  }
+}
+
+// ── Negotiation Strategy ───────────────────────────────────────────────────────
+async function runNegotiation() {
+  const btn = document.getElementById("neg-btn");
+  const out = document.getElementById("neg-result");
+  btn.disabled = true; btn.textContent = "Analyzing…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-top:14px" class="loading-dots">Fetching AVM + strategy</div>`;
+
+  try {
+    const payload = {
+      city:          document.getElementById("neg-city").value,
+      property_type: document.getElementById("neg-type").value,
+      sqft:          +document.getElementById("neg-sqft").value,
+      beds:          +document.getElementById("neg-beds").value,
+      baths:         +document.getElementById("neg-baths").value,
+      lot_size:      +document.getElementById("neg-lot").value || 0,
+      year_built:    +document.getElementById("neg-year").value,
+      garage_spaces: +document.getElementById("neg-garage").value || 0,
+      school_score:  +document.getElementById("neg-school").value,
+      walk_score:    +document.getElementById("neg-walk").value,
+      crime_index:   +document.getElementById("neg-crime").value,
+    };
+    const dom    = document.getElementById("neg-dom").value;
+    const offers = document.getElementById("neg-offers").value;
+    const ask    = document.getElementById("neg-ask").value;
+    if (dom)    payload.days_on_market     = +dom;
+    if (offers) payload.num_competing_offers = +offers;
+    if (ask)    payload.asking_price       = +ask;
+
+    const r = await j("/v1/negotiation/strategy", {method:"POST",body:JSON.stringify(payload)});
+
+    // Price bar geometry — map values to %
+    const allPrices = [r.buyer_bid, r.seller_list_price, r.avm_estimate, r.expected_close_low, r.expected_close_high];
+    const lo = Math.min(...allPrices) * 0.985;
+    const hi = Math.max(...allPrices) * 1.015;
+    const pct = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+    const buyerPct  = pct(r.buyer_bid);
+    const avmPct    = pct(r.avm_estimate);
+    const sellerPct = pct(r.seller_list_price);
+    const closeLoPct  = pct(r.expected_close_low);
+    const closeHiPct  = pct(r.expected_close_high);
+    const closeWidth  = closeHiPct - closeLoPct;
+
+    // Leverage + condition badges
+    const condLabel = {hot:"🔥 HOT",warm:"☀ WARM",cool:"❄ COOL",cold:"🧊 COLD"};
+    const levLabel  = {seller:"Seller leverage",neutral:"Balanced",buyer:"Buyer leverage"};
+
+    // Key factors
+    const factorHTML = (r.key_factors || []).map(f => `
+      <div class="factor-item">
+        <div class="factor-icon ${f.impact}"></div>
+        <div><b>${esc(f.factor)}</b> — <span style="color:var(--muted)">${esc(f.detail)}</span></div>
+      </div>`).join("");
+
+    // Bid/offer pct color
+    const pctColor = v => v > 0 ? "var(--alarm)" : v < 0 ? "var(--ok)" : "var(--muted)";
+    const fmtPct   = v => `${v > 0 ? "+" : ""}${v.toFixed(1)}% vs AVM`;
+
+    out.innerHTML = `
+      <!-- badges row -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <span class="market-badge ${r.market_condition}">${condLabel[r.market_condition]||r.market_condition}</span>
+        <span class="leverage-badge ${r.leverage}">${levLabel[r.leverage]||r.leverage}</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">AVM v${r.model_version} · ${r.request_id.slice(0,8)}</span>
+      </div>
+
+      <!-- AVM anchor row -->
+      <div style="margin-top:14px;background:var(--panel-2);border-radius:9px;padding:12px 16px;border:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">AVM estimate (objective anchor)</div>
+        <div style="font-size:22px;font-weight:700">${money(r.avm_estimate)}</div>
+        <div style="font-size:12px;color:var(--muted)">90% CI: ${money(r.avm_lower)} – ${money(r.avm_upper)}
+          ${payload.asking_price ? ` · Asking: <b style="color:var(--text)">${money(payload.asking_price)}</b>` : ""}
+        </div>
+      </div>
+
+      <!-- Price position bar -->
+      <div class="price-bar-wrap">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Negotiation price range</div>
+        <div class="price-bar-track">
+          <div class="price-bar-close" style="left:${closeLoPct}%;width:${closeWidth}%"
+               title="Expected close range"></div>
+          <div class="price-bar-avm" style="left:${avmPct}%" title="AVM ${money(r.avm_estimate)}"></div>
+          <div class="price-bar-pin buyer"  style="left:${buyerPct}%"  title="Buyer bid ${money(r.buyer_bid)}"></div>
+          <div class="price-bar-pin seller" style="left:${sellerPct}%" title="Seller list ${money(r.seller_list_price)}"></div>
+        </div>
+        <div class="price-bar-labels">
+          <span style="color:var(--champ)">Bid ${money(r.buyer_bid)}</span>
+          <span style="color:var(--muted);font-size:9px">expected close ${money(r.expected_close_low)}–${money(r.expected_close_high)}</span>
+          <span style="color:var(--warn)">List ${money(r.seller_list_price)}</span>
+        </div>
+      </div>
+
+      <!-- Buyer + Seller columns -->
+      <div class="neg-cols">
+        <div class="neg-side buyer-side">
+          <div class="ns-label">Buyer strategy</div>
+          <div class="ns-price">${money(r.buyer_bid)}</div>
+          <div class="ns-pct" style="color:${pctColor(r.buyer_bid_pct_of_avm)}">${fmtPct(r.buyer_bid_pct_of_avm)}</div>
+          <div class="ns-tactic">${esc(r.buyer_tactic)}</div>
+        </div>
+        <div class="neg-side seller-side">
+          <div class="ns-label">Seller strategy</div>
+          <div class="ns-price">${money(r.seller_list_price)}</div>
+          <div class="ns-pct" style="color:${pctColor(r.seller_list_pct_of_avm)}">${fmtPct(r.seller_list_pct_of_avm)}</div>
+          <div class="ns-tactic">${esc(r.seller_tactic)}</div>
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;color:var(--muted)">Walk-away floor</div>
+            <div style="font-size:16px;font-weight:600">${money(r.seller_floor)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key factors -->
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          Key factors
+          <span style="font-size:10px">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(255,90,95,.7);vertical-align:middle"></span> seller
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(247,185,85,.7);vertical-align:middle;margin-left:6px"></span> neutral
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(55,211,153,.7);vertical-align:middle;margin-left:6px"></span> buyer
+          </span>
+        </div>
+        <div class="factor-list">${factorHTML}</div>
+      </div>
+
+      <div style="margin-top:12px;font-size:10px;color:var(--muted)">
+        Negotiation gap: <b>${money(r.negotiation_gap)}</b> · Strategy adjusts live as you change inputs above
+      </div>`;
+
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:12px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Analyze strategy";
+  }
+}
+
+// ── Warm-up on load ────────────────────────────────────────────────────────────
+(async () => {
+  for (let i=0;i<10;i++) {
+    try {
+      const h = homePayload(); h.sqft=1500+Math.random()*2500; h.beds=1+Math.floor(Math.random()*5);
+      await j("/v1/avm/predict", {method:"POST",body:JSON.stringify(h)});
+    } catch {}
+  }
+  refreshDrift();
+})();
+</script>
+</body>
+</html>

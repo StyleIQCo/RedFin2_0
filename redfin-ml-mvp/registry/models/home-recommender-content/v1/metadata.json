@@ -1,0 +1,21 @@
+{
+  "name": "home-recommender-content",
+  "version": 1,
+  "stage": "production",
+  "created_at": "2026-04-21T20:54:34.510582+00:00",
+  "training_data_hash": "67df945c0618c6bd",
+  "training_data_rows": 50000,
+  "git_sha": null,
+  "params": {
+    "metric": "euclidean",
+    "n_neighbors": 50
+  },
+  "metrics": {
+    "top1_same_city_rate": 0.408,
+    "indexed_items": 50000
+  },
+  "tags": {
+    "owner": "applied-ml",
+    "framework": "sklearn"
+  }
+}

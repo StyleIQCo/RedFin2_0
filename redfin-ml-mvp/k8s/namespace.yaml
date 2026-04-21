@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: applied-ml
+  labels:
+    team: applied-ml
+    cost-center: ml-platform

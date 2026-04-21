@@ -1,0 +1,12 @@
+{
+  "agent": {
+    "model": "anthropic/claude-haiku-4-5-20251001",
+    "soul": "SOUL.md"
+  },
+  "skills": [
+    "redfin-home-search"
+  ],
+  "gateway": {
+    "port": 18789
+  }
+}

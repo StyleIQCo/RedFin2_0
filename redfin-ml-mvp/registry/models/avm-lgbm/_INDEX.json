@@ -1,0 +1,7 @@
+{
+  "next_version": 3,
+  "stages": {
+    "staging": 2,
+    "production": 1
+  }
+}

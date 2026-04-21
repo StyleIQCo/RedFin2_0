@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redfin-ml-config
+  namespace: applied-ml
+data:
+  REDFIN_ML_AB_ENABLED: "true"
+  REDFIN_ML_AB_TRAFFIC_SPLIT: "0.10"
+  REDFIN_ML_PSI_WARN_THRESHOLD: "0.10"
+  REDFIN_ML_PSI_ALARM_THRESHOLD: "0.25"
+  REDFIN_ML_FEATURE_CACHE_TTL_SECONDS: "300"

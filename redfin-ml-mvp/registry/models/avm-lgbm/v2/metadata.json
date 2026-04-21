@@ -1,0 +1,30 @@
+{
+  "name": "avm-lgbm",
+  "version": 2,
+  "stage": "staging",
+  "created_at": "2026-04-21T22:15:23.682816+00:00",
+  "training_data_hash": "6a011d2ae37ffdce",
+  "training_data_rows": 42500,
+  "git_sha": null,
+  "params": {
+    "objective": "regression",
+    "metric": "mape",
+    "learning_rate": 0.04,
+    "num_leaves": 127,
+    "min_data_in_leaf": 30,
+    "feature_fraction": 0.85,
+    "bagging_fraction": 0.85,
+    "bagging_freq": 5,
+    "verbose": -1
+  },
+  "metrics": {
+    "mape": 0.11310358080060987,
+    "median_ape": 0.09278484547460072,
+    "p90_coverage": 0.8410666666666666,
+    "n": 7500
+  },
+  "tags": {
+    "source": "ui_retrain",
+    "job_id": "bade1de8"
+  }
+}

@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Trained models & data (large binaries)
+redfin-ml-mvp/redfin_models/
+redfin-ml-mvp/data/homes.parquet
+
+# Server logs
+/tmp/redfin_server.log
+
+# OS
+.DS_Store

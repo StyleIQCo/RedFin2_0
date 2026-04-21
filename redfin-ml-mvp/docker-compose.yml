@@ -1,0 +1,41 @@
+# Local dev stack: API + Prometheus + Grafana.
+# Run: docker-compose up --build
+# Then: http://localhost:8000  (API)
+#       http://localhost:9090  (Prometheus)
+#       http://localhost:3000  (Grafana — admin/admin)
+
+services:
+  api:
+    build: .
+    image: redfin-ml-mvp:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - REDFIN_ML_AB_TRAFFIC_SPLIT=0.10
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:10.4.1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./ops/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+    depends_on:
+      - prometheus

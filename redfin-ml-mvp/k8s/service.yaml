@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redfin-ml-api
+  namespace: applied-ml
+  labels: { app: redfin-ml-api, team: applied-ml }
+spec:
+  type: ClusterIP
+  selector: { app: redfin-ml-api }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000

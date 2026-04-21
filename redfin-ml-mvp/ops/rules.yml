@@ -1,0 +1,32 @@
+groups:
+- name: redfin-ml-health
+  rules:
+  - alert: AVMHighLatency
+    expr: histogram_quantile(0.95, sum by (le) (rate(redfin_ml_request_latency_seconds_bucket{endpoint="/v1/avm/predict"}[5m]))) > 0.25
+    for: 5m
+    labels: { severity: page, team: applied-ml }
+    annotations:
+      summary: "AVM p95 latency > 250ms for 5m"
+      runbook_url: "https://runbooks.redfin.com/ml/avm-latency"
+
+  - alert: AVMErrorRate
+    expr: sum(rate(redfin_ml_requests_total{endpoint="/v1/avm/predict",status="error"}[5m])) / sum(rate(redfin_ml_requests_total{endpoint="/v1/avm/predict"}[5m])) > 0.01
+    for: 5m
+    labels: { severity: page, team: applied-ml }
+    annotations:
+      summary: "AVM error rate > 1% for 5m"
+
+  - alert: AVMDataDriftAlarm
+    expr: redfin_ml_drift_max_psi{model="avm-lgbm"} > 0.25
+    for: 15m
+    labels: { severity: warn, team: applied-ml }
+    annotations:
+      summary: "AVM input distribution drift: PSI > 0.25"
+      description: "Likely candidates: schema change, new market launch, upstream ingestion bug. Check `/v1/drift/report`."
+
+  - alert: AVMPredictionDrift
+    expr: histogram_quantile(0.5, sum by (le) (rate(redfin_ml_avm_prediction_usd_bucket[30m]))) > histogram_quantile(0.5, sum by (le) (rate(redfin_ml_avm_prediction_usd_bucket[24h] offset 24h))) * 1.5
+    for: 30m
+    labels: { severity: warn, team: applied-ml }
+    annotations:
+      summary: "AVM median prediction jumped 50%+ vs. yesterday"

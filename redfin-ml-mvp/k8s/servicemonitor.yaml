@@ -1,0 +1,17 @@
+# For Prometheus Operator — wires /metrics into the cluster's Prometheus.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redfin-ml-api
+  namespace: applied-ml
+  labels:
+    team: applied-ml
+    release: prometheus  # chart label
+spec:
+  selector:
+    matchLabels:
+      app: redfin-ml-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
