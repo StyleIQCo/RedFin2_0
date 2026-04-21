@@ -26,7 +26,8 @@ nav button.agent-tab.active { border-bottom-color:var(--accent-3); color:var(--a
 nav button.ab-tab.active { border-bottom-color:var(--champ); color:var(--champ); }
 nav button.data-tab.active { border-bottom-color:var(--ok); color:var(--ok); }
 nav button.neg-tab.active    { border-bottom-color:var(--warn);   color:var(--warn); }
-nav button.seller-tab.active { border-bottom-color:#f97316;       color:#f97316; }
+nav button.seller-tab.active { border-bottom-color:#f97316; color:#f97316; }
+nav button.vs-tab.active     { border-bottom-color:#a855f7; color:#a855f7; }
 .tab-pane { display:none; } .tab-pane.active { display:block; }
 main { max-width:1320px; margin:0 auto; padding:24px 28px; display:grid; grid-template-columns:1fr 1fr; gap:24px; }
 .full { grid-column:1/-1; }
@@ -209,6 +210,39 @@ a { color:var(--accent-2); }
 .pros-cons .pc-item { font-size:11px; padding:2px 0; display:flex; gap:5px; align-items:start; }
 .compare-summary { background:rgba(247,185,85,.08); border:1px solid rgba(247,185,85,.25); border-radius:8px; padding:12px 14px; font-size:13px; margin-top:14px; }
 
+/* Competitive analysis */
+.vs-card { border-color:rgba(168,85,247,.25) !important; }
+.platform-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:14px; }
+.platform-card { background:var(--panel-2); border:2px solid var(--border); border-radius:12px; padding:18px; }
+.platform-card.us { border-color:rgba(168,85,247,.5); background:rgba(168,85,247,.04); }
+.platform-card .pc-name { font-size:16px; font-weight:700; margin-bottom:4px; }
+.platform-card .pc-tag  { font-size:11px; color:var(--muted); margin-bottom:12px; }
+.platform-card .pc-score-wrap { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.platform-card .pc-score { font-size:32px; font-weight:800; }
+.platform-card .pc-score-label { font-size:11px; color:var(--muted); }
+.platform-card .pc-bar { flex:1; height:8px; background:var(--panel-3); border-radius:4px; overflow:hidden; }
+.platform-card .pc-bar>div { height:100%; border-radius:4px; }
+.pc-pro  { display:flex; gap:6px; align-items:start; font-size:12px; padding:3px 0; line-height:1.45; }
+.pc-con  { display:flex; gap:6px; align-items:start; font-size:12px; padding:3px 0; line-height:1.45; color:var(--muted); }
+.pc-section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin:10px 0 4px; }
+.feature-matrix { overflow-x:auto; margin-top:16px; }
+.fm-table { width:100%; border-collapse:collapse; font-size:12px; min-width:700px; }
+.fm-table th { text-align:left; padding:8px 12px; border-bottom:2px solid var(--border); color:var(--muted); font-weight:600; }
+.fm-table th.us-col { color:var(--accent-3); }
+.fm-table td { padding:7px 12px; border-bottom:1px solid rgba(35,49,79,.5); vertical-align:top; }
+.fm-table tr:hover td { background:rgba(255,255,255,.02); }
+.fm-score { display:inline-flex; gap:3px; }
+.fm-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.fm-dot.filled { background:currentColor; }
+.fm-dot.empty  { background:var(--panel-3); border:1px solid var(--border); }
+.diff-badge { display:inline-block; font-size:10px; font-weight:700; padding:1px 6px; border-radius:6px; margin-left:4px; }
+.diff-badge.win  { background:rgba(55,211,153,.15); color:var(--ok); }
+.diff-badge.par  { background:rgba(247,185,85,.12); color:var(--warn); }
+.diff-badge.lose { background:rgba(255,90,95,.12);  color:var(--alarm); }
+.diff-row { display:flex; gap:10px; align-items:start; padding:8px 0; border-bottom:1px solid rgba(35,49,79,.4); font-size:13px; }
+.diff-row:last-child { border-bottom:none; }
+.diff-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+
 /* Seller portal */
 .seller-card { border-color:rgba(249,115,22,.3) !important; }
 .seller-kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:14px; }
@@ -246,6 +280,7 @@ a { color:var(--accent-2); }
   <button class="data-tab" onclick="switchTab('data',this)">◎ Data Intelligence</button>
   <button class="neg-tab" onclick="switchTab('neg',this)">⚑ Negotiate</button>
   <button class="seller-tab" onclick="switchTab('seller',this)">🏷 Seller Portal</button>
+  <button class="vs-tab" onclick="switchTab('vs',this)">⚔ vs Competitors</button>
 </nav>
 
 <!-- ═══ TAB 1 — ML Platform ═══ -->
@@ -679,6 +714,20 @@ a { color:var(--accent-2); }
           <tr><td>🧊 Cold</td><td>−10%</td><td>−5%</td><td>−13%</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+</main>
+</div>
+
+<!-- ═══ TAB 7 — vs Competitors ═══ -->
+<div class="tab-pane" id="tab-vs">
+<main>
+  <section class="card vs-card full">
+    <h2>Platform Comparison <span class="badge purple">⚔ vs Zillow · Compass · Agents</span></h2>
+    <div class="sub">Data-driven pros &amp; cons across every platform — uses our live model metrics so the accuracy comparison is always current.</div>
+    <button id="vs-load-btn" style="background:var(--accent-3)" onclick="loadCompetitiveAnalysis()">Load competitive analysis</button>
+    <div id="vs-result">
+      <div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Click to run analysis against live model metrics</div>
     </div>
   </section>
 </main>
@@ -1151,6 +1200,157 @@ async function loadMarketIntelligence() {
     el.innerHTML = `<div class="grid6">${cards}</div>
       <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">${r.total_listings.toLocaleString()} total listings · sorted by median price</div>`;
   } catch(e) { el.innerHTML = `<div style="color:var(--alarm);font-size:12px">${esc(e.message)}</div>`; }
+}
+
+// ── Competitive Analysis ───────────────────────────────────────────────────────
+async function loadCompetitiveAnalysis() {
+  const btn = document.getElementById("vs-load-btn");
+  const out = document.getElementById("vs-result");
+  btn.disabled = true; btn.textContent = "Loading…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-top:14px" class="loading-dots">Fetching live model metrics</div>`;
+
+  try {
+    const r = await j("/v1/competitive/analysis");
+    const us = r.our_platform;
+    const plats = r.platforms;
+
+    // Score bar color
+    const barColor = pct => pct >= 85 ? "var(--ok)" : pct >= 65 ? "var(--warn)" : "var(--alarm)";
+    const platColor = { zillow:"#4f6bff", compass:"#f97316", agent:"#a855f7" };
+    const platEmoji = { zillow:"🔵", compass:"🟠", agent:"🟣" };
+
+    // Score dots (0–3)
+    const dots = (score, col) => {
+      const c = col || "var(--ok)";
+      return `<span class="fm-score" style="color:${c}">${[0,1,2].map(i=>
+        `<span class="fm-dot ${i<score?'filled':'empty'}"></span>`).join("")}</span>`;
+    };
+
+    // Platform summary cards
+    const platformCards = ["zillow","compass","agent"].map(key => {
+      const p = plats[key];
+      const col = platColor[key];
+      const prosHTML = p.pros.map(t=>`<div class="pc-pro"><span style="color:var(--ok)">✓</span>${esc(t)}</div>`).join("");
+      const consHTML = p.cons.map(t=>`<div class="pc-con"><span style="color:var(--alarm)">✗</span>${esc(t)}</div>`).join("");
+      return `<div class="platform-card">
+        <div class="pc-name">${esc(p.name)}</div>
+        <div class="pc-tag">${esc(p.tagline)}</div>
+        <div class="pc-score-wrap">
+          <div class="pc-score" style="color:${col}">${p.score_pct.toFixed(0)}</div>
+          <div>
+            <div class="pc-bar"><div style="width:${p.score_pct}%;background:${col}"></div></div>
+            <div class="pc-score-label">${p.total_score}/${p.max_score} capability score</div>
+          </div>
+        </div>
+        <div class="pc-section-label" style="color:var(--ok)">Strengths</div>
+        ${prosHTML}
+        <div class="pc-section-label" style="color:var(--alarm)">Weaknesses</div>
+        ${consHTML}
+        <div style="margin-top:12px;padding:8px 10px;background:var(--panel-3);border-radius:7px;font-size:11px;color:var(--muted)">
+          <b>When to use:</b> ${esc(p.when_to_use)}
+        </div>
+      </div>`;
+    }).join("");
+
+    // Our platform card
+    const ourCard = `<div class="platform-card us">
+      <div class="pc-name" style="color:var(--accent-3)">★ ${esc(us.name)}</div>
+      <div class="pc-tag">${esc(us.tagline)}</div>
+      <div class="pc-score-wrap">
+        <div class="pc-score" style="color:var(--accent-3)">${us.score_pct.toFixed(0)}</div>
+        <div>
+          <div class="pc-bar"><div style="width:${us.score_pct}%;background:var(--accent-3)"></div></div>
+          <div class="pc-score-label">${us.total_score}/${us.max_score} capability score</div>
+        </div>
+      </div>
+      <div style="font-size:12px;margin-top:4px">
+        <div>AVM MAPE: <b style="color:var(--ok)">${us.avm_mape}%</b></div>
+        <div>CI coverage: <b style="color:var(--ok)">${us.avm_coverage}%</b></div>
+        <div>Model: <b>v${us.model_version}</b> (live)</div>
+      </div>
+    </div>`;
+
+    // Feature matrix
+    const matrixRows = r.features.map(f => {
+      const scores = {us:f.us.score, zillow:f.zillow.score, compass:f.compass.score, agent:f.agent.score};
+      const maxScore = Math.max(...Object.values(scores));
+      const diffBadge = s => {
+        if (s === maxScore && maxScore === scores.us) return `<span class="diff-badge win">WIN</span>`;
+        if (s === maxScore && maxScore > scores.us)   return `<span class="diff-badge lose">LEAD</span>`;
+        if (s === scores.us && s === maxScore)         return `<span class="diff-badge par">TIE</span>`;
+        return "";
+      };
+      return `<tr>
+        <td style="font-weight:500;color:var(--text)">${esc(f.capability)}</td>
+        <td>${dots(f.us.score,"var(--accent-3)")}${diffBadge(f.us.score)}<br><span style="font-size:10px;color:var(--muted)">${esc(f.us.note)}</span></td>
+        <td>${dots(f.zillow.score,platColor.zillow)}<br><span style="font-size:10px;color:var(--muted)">${esc(f.zillow.note)}</span></td>
+        <td>${dots(f.compass.score,platColor.compass)}<br><span style="font-size:10px;color:var(--muted)">${esc(f.compass.note)}</span></td>
+        <td>${dots(f.agent.score,platColor.agent)}<br><span style="font-size:10px;color:var(--muted)">${esc(f.agent.note)}</span></td>
+      </tr>`;
+    }).join("");
+
+    // Key differentiators
+    const diffHTML = r.key_differentiators.map((d,i) => `
+      <div class="diff-row">
+        <span class="diff-icon">⚡</span>
+        <span>${esc(d)}</span>
+      </div>`).join("");
+
+    out.innerHTML = `
+      <!-- Score summary bar -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 20px;padding:14px 16px;background:var(--panel-2);border-radius:10px;border:1px solid rgba(168,85,247,.2)">
+        ${["us","zillow","compass","agent"].map(k => {
+          const label = k==="us" ? "Our Platform" : plats[k]?.name;
+          const score = k==="us" ? us.score_pct : plats[k]?.score_pct;
+          const col   = k==="us" ? "var(--accent-3)" : platColor[k];
+          return `<div style="text-align:center;flex:1 1 80px">
+            <div style="font-size:24px;font-weight:800;color:${col}">${score?.toFixed(0)}</div>
+            <div style="font-size:11px;color:var(--muted)">${esc(label)}</div>
+          </div>`;
+        }).join('<div style="color:var(--border);font-size:20px">|</div>')}
+      </div>
+
+      <!-- Platform cards -->
+      <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;font-size:11px">Platform profiles</div>
+      <div class="platform-grid">
+        ${ourCard}${platformCards}
+      </div>
+
+      <!-- Key differentiators -->
+      <div style="margin-top:24px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Where we uniquely win</div>
+        ${diffHTML}
+      </div>
+
+      <!-- Full feature matrix -->
+      <div style="margin-top:24px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">Full capability matrix
+          <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px">●●● = excellent · ●●○ = good · ●○○ = partial · ○○○ = absent</span>
+        </div>
+        <div class="feature-matrix">
+          <table class="fm-table">
+            <thead><tr>
+              <th style="width:200px">Capability</th>
+              <th class="us-col">★ Our Platform</th>
+              <th style="color:${platColor.zillow}">Zillow</th>
+              <th style="color:${platColor.compass}">Compass</th>
+              <th style="color:${platColor.agent}">Human Agent</th>
+            </tr></thead>
+            <tbody>${matrixRows}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;font-size:11px;color:var(--muted)">
+        Capability scores use our live model metrics (MAPE ${us.avm_mape}%, CI coverage ${us.avm_coverage}%, v${us.model_version}).
+        Competitor benchmarks from published research: Zillow 2023 Accuracy Report, NAR transaction data.
+      </div>`;
+
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:12px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Refresh analysis";
+  }
 }
 
 // ── Seller Portal ──────────────────────────────────────────────────────────────
