@@ -1394,3 +1394,125 @@ def compare_properties(body: CompareRequest, request: Request) -> CompareRespons
 
 def money_str(v: float) -> str:
     return f"${int(v):,}"
+
+
+# ---------------------------------------------------------------------------
+# Seller Portal — Neighborhood Activity Feed
+# ---------------------------------------------------------------------------
+
+@app.get("/v1/seller/neighborhood-activity", tags=["seller"])
+def neighborhood_activity(
+    city: str,
+    property_type: str = "",
+    limit: int = 12,
+    request: Request = None,
+) -> dict:
+    """Recent comparable sales + pending listings in the seller's neighborhood.
+
+    For each comparable:
+      - Runs AVM to get the model's prediction
+      - Uses the dataset price as the 'actual sale price' (ground truth)
+      - Simulates an asking price (dataset price ± realistic noise)
+      - Computes sold-vs-asking and sold-vs-AVM deltas
+
+    This powers the seller's neighborhood dashboard: see what comps are selling
+    for, whether they beat AVM, and whether the model is accurate locally.
+    """
+    state: _State = request.app.state.ml if request else None
+    if state is None or state.avm_champion is None:
+        raise HTTPException(503, "AVM model not loaded")
+
+    df = feature_store.get_training_df()
+    city_df = df[df["city"] == city].copy()
+    if property_type:
+        city_df = city_df[city_df["property_type"] == property_type]
+    if len(city_df) == 0:
+        raise HTTPException(404, f"No listings found for city={city}")
+
+    # Sample recent comparables
+    sample_size = min(limit * 3, len(city_df))
+    rng = np.random.default_rng(seed=int(time.time()) // 3600)   # changes hourly (daily in prod)
+    sample = city_df.sample(sample_size, random_state=int(rng.integers(1000))).head(limit * 2)
+
+    # Assign status: ~20% pending, 80% sold
+    statuses = (["pending"] * max(1, len(sample) // 5) + ["sold"] * len(sample))[:len(sample)]
+    rng.shuffle(statuses)
+
+    # Simulate dates: spread over last 30 days
+    import datetime
+    today = datetime.date.today()
+
+    results = []
+    for idx, (_, row) in enumerate(sample.iterrows()):
+        try:
+            home_df = pd.DataFrame([row.drop("price").to_dict()])
+            # ensure required cols exist
+            for col in ["garage_spaces"]:
+                if col not in home_df.columns:
+                    home_df[col] = 0
+            pred = state.avm_champion.predict(
+                home_df,
+                model_name=settings.avm_model_name,
+                model_version=state.avm_champion_version,
+            )
+            avm_estimate = pred.point
+            actual_price = float(row["price"])
+
+            # Simulate asking price: actual price ± 2–7% noise
+            ask_noise = rng.uniform(-0.04, 0.06)
+            asking_price = int(round(actual_price * (1 + ask_noise) / 1000) * 1000)
+
+            status = statuses[idx % len(statuses)]
+            days_ago = int(rng.integers(1, 31))
+            sale_date = (today - datetime.timedelta(days=days_ago)).isoformat()
+
+            entry = {
+                "listing_id": int(row.get("listing_id", idx)),
+                "city": city,
+                "property_type": str(row.get("property_type", "")),
+                "sqft": int(row.get("sqft", 0)),
+                "beds": int(row.get("beds", 0)),
+                "baths": float(row.get("baths", 0)),
+                "year_built": int(row.get("year_built", 0)),
+                "school_score": round(float(row.get("school_score", 0)), 1),
+                "avm_estimate": int(round(avm_estimate)),
+                "asking_price": asking_price,
+                "status": status,
+                "days_ago": days_ago,
+                "sale_date": sale_date,
+                # Only filled for sold
+                "sale_price": int(round(actual_price)) if status == "sold" else None,
+                "sold_vs_asking_pct": round((actual_price - asking_price) / asking_price * 100, 1) if status == "sold" else None,
+                "sold_vs_avm_pct": round((actual_price - avm_estimate) / avm_estimate * 100, 1) if status == "sold" else None,
+                "avm_error_pct": round(abs(actual_price - avm_estimate) / actual_price * 100, 1),
+            }
+            results.append(entry)
+        except Exception:
+            continue
+
+    results.sort(key=lambda x: x["days_ago"])   # most recent first
+    results = results[:limit]
+
+    # Summary stats (sold only)
+    sold = [r for r in results if r["status"] == "sold"]
+    summary = {}
+    if sold:
+        vs_ask = [r["sold_vs_asking_pct"] for r in sold if r["sold_vs_asking_pct"] is not None]
+        vs_avm = [r["sold_vs_avm_pct"]   for r in sold if r["sold_vs_avm_pct"]   is not None]
+        avm_errs = [r["avm_error_pct"]   for r in sold if r["avm_error_pct"]      is not None]
+        summary = {
+            "avg_sold_vs_asking_pct": round(float(np.mean(vs_ask)), 1) if vs_ask else None,
+            "pct_sold_above_asking":  round(sum(v > 0 for v in vs_ask) / len(vs_ask) * 100, 0) if vs_ask else None,
+            "avg_avm_error_pct":      round(float(np.mean(avm_errs)), 1) if avm_errs else None,
+            "avg_sold_vs_avm_pct":    round(float(np.mean(vs_avm)), 1) if vs_avm else None,
+        }
+
+    return {
+        "city": city,
+        "property_type_filter": property_type or "all",
+        "total_returned": len(results),
+        "sold_count": len(sold),
+        "pending_count": len(results) - len(sold),
+        "summary": summary,
+        "listings": results,
+    }

@@ -25,7 +25,8 @@ nav button.active { color:var(--text); border-bottom-color:var(--accent); }
 nav button.agent-tab.active { border-bottom-color:var(--accent-3); color:var(--accent-3); }
 nav button.ab-tab.active { border-bottom-color:var(--champ); color:var(--champ); }
 nav button.data-tab.active { border-bottom-color:var(--ok); color:var(--ok); }
-nav button.neg-tab.active { border-bottom-color:var(--warn); color:var(--warn); }
+nav button.neg-tab.active    { border-bottom-color:var(--warn);   color:var(--warn); }
+nav button.seller-tab.active { border-bottom-color:#f97316;       color:#f97316; }
 .tab-pane { display:none; } .tab-pane.active { display:block; }
 main { max-width:1320px; margin:0 auto; padding:24px 28px; display:grid; grid-template-columns:1fr 1fr; gap:24px; }
 .full { grid-column:1/-1; }
@@ -207,6 +208,30 @@ a { color:var(--accent-2); }
 .pros-cons .pc-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
 .pros-cons .pc-item { font-size:11px; padding:2px 0; display:flex; gap:5px; align-items:start; }
 .compare-summary { background:rgba(247,185,85,.08); border:1px solid rgba(247,185,85,.25); border-radius:8px; padding:12px 14px; font-size:13px; margin-top:14px; }
+
+/* Seller portal */
+.seller-card { border-color:rgba(249,115,22,.3) !important; }
+.seller-kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:14px; }
+@media(max-width:800px){ .seller-kpi { grid-template-columns:repeat(2,1fr); } }
+.seller-kpi-box { background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:14px 16px; }
+.seller-kpi-box .sv { font-size:22px; font-weight:700; }
+.seller-kpi-box .sl { font-size:11px; color:var(--muted); margin-top:2px; }
+.pricing-tier { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+.tier-card { flex:1 1 180px; background:var(--panel-2); border:2px solid var(--border); border-radius:10px; padding:14px; }
+.tier-card.recommended { border-color:#f97316; }
+.tier-card .tc-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:6px; }
+.tier-card.recommended .tc-label { color:#f97316; }
+.tier-card .tc-price { font-size:22px; font-weight:700; }
+.tier-card .tc-pct   { font-size:12px; color:var(--muted); }
+.tier-card .tc-desc  { font-size:12px; margin-top:8px; color:var(--text); line-height:1.5; }
+.dom-risk-bar { position:relative; height:12px; background:linear-gradient(90deg,var(--ok),var(--warn),var(--alarm)); border-radius:6px; overflow:visible; margin:8px 0 4px; }
+.dom-risk-marker { position:absolute; top:-4px; width:4px; height:20px; background:white; border-radius:2px; transform:translateX(-50%); }
+.comp-row { display:grid; grid-template-columns:1fr 80px 80px 70px; gap:8px; align-items:center; padding:5px 0; font-size:12px; border-bottom:1px solid rgba(35,49,79,.5); }
+.comp-row:last-child { border-bottom:none; }
+.timing-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:10px; }
+.timing-cell { text-align:center; padding:6px 2px; border-radius:5px; font-size:10px; cursor:default; }
+.timing-cell .day  { font-weight:600; font-size:11px; }
+.timing-cell .score { font-size:10px; color:var(--muted); }
 </style>
 </head>
 <body>
@@ -220,6 +245,7 @@ a { color:var(--accent-2); }
   <button class="ab-tab" onclick="switchTab('ab',this)">⚗ A/B Testing</button>
   <button class="data-tab" onclick="switchTab('data',this)">◎ Data Intelligence</button>
   <button class="neg-tab" onclick="switchTab('neg',this)">⚑ Negotiate</button>
+  <button class="seller-tab" onclick="switchTab('seller',this)">🏷 Seller Portal</button>
 </nav>
 
 <!-- ═══ TAB 1 — ML Platform ═══ -->
@@ -658,8 +684,81 @@ a { color:var(--accent-2); }
 </main>
 </div>
 
+<!-- ═══ TAB 6 — Seller Portal ═══ -->
+<div class="tab-pane" id="tab-seller">
+<main>
+
+  <!-- Seller property form -->
+  <section class="card seller-card">
+    <h2>Seller Property Details <span class="badge" style="color:#f97316;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3)">🏷 Seller Mode</span></h2>
+    <div class="sub">Enter your home details to get an AVM-anchored listing price, timing advice, and market context.</div>
+    <div class="grid2">
+      <div><label>City</label>
+        <select id="sell-city"><option>Seattle</option><option>San Francisco</option><option>Los Angeles</option><option>Portland</option><option>Austin</option><option>Denver</option><option>Chicago</option><option>Boston</option><option>Washington DC</option><option>Atlanta</option><option>Dallas</option><option>Miami</option></select></div>
+      <div><label>Property type</label>
+        <select id="sell-type"><option value="single_family">Single family</option><option value="condo">Condo</option><option value="townhouse">Townhouse</option><option value="multi_family">Multi-family</option></select></div>
+    </div>
+    <div class="grid3">
+      <div><label>Sqft</label><input id="sell-sqft" type="number" value="2200"/></div>
+      <div><label>Beds</label><input id="sell-beds" type="number" value="3"/></div>
+      <div><label>Baths</label><input id="sell-baths" type="number" step="0.5" value="2.5"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Lot size</label><input id="sell-lot" type="number" value="5000"/></div>
+      <div><label>Year built</label><input id="sell-year" type="number" value="2005"/></div>
+      <div><label>Garage</label><input id="sell-garage" type="number" value="2"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>School (1–10)</label><input id="sell-school" type="number" step="0.1" value="7.5"/></div>
+      <div><label>Walk score</label><input id="sell-walk" type="number" value="72"/></div>
+      <div><label>Crime index</label><input id="sell-crime" type="number" value="30"/></div>
+    </div>
+    <div class="grid3">
+      <div><label>Recent renovations?</label>
+        <select id="sell-reno">
+          <option value="none">None</option>
+          <option value="minor">Minor (paint, fixtures)</option>
+          <option value="kitchen">Kitchen remodel</option>
+          <option value="major">Major (kitchen + baths)</option>
+        </select>
+      </div>
+      <div><label>Seller motivation</label>
+        <select id="sell-urgency">
+          <option value="flexible">Flexible timeline</option>
+          <option value="moderate">Moderate (2–3 months)</option>
+          <option value="urgent">Urgent (must sell fast)</option>
+        </select>
+      </div>
+      <div><label>Mortgage payoff ($)</label>
+        <input id="sell-payoff" type="number" placeholder="e.g. 420000" title="Outstanding mortgage — used to compute net proceeds"/></div>
+    </div>
+    <button id="seller-btn" style="width:100%;background:#f97316;color:#1a0f00;font-weight:700" onclick="runSellerPortal()">Analyze my listing</button>
+    <div id="seller-result"></div>
+  </section>
+
+  <!-- Seller market context -->
+  <section class="card seller-card" style="align-self:start">
+    <h2>Market Snapshot <span class="badge" style="color:#f97316;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3)">Live</span></h2>
+    <div class="sub">City-level conditions from 50k listings — loads automatically when you select a city.</div>
+    <div id="seller-market-snap">
+      <div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Select a city and analyze to see market snapshot</div>
+    </div>
+  </section>
+
+  <!-- Neighborhood Activity Feed (full width) -->
+  <section class="card seller-card full">
+    <h2>Neighborhood Activity Feed <span class="badge" style="color:#f97316;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3)">Daily</span></h2>
+    <div class="sub">Recent sales and pending listings in your city — with AVM accuracy and sold-vs-asking comparisons. Updates each time you run the analysis.</div>
+    <div id="neighborhood-feed">
+      <div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Run the analysis above to load neighborhood activity</div>
+    </div>
+  </section>
+
+</main>
+</div>
+
 <footer>
-  Redfin ML MVP — AVM · Recommender · AI Agents · A/B Testing · Data Intelligence · Negotiation.
+  Redfin ML MVP — AVM · Recommender · AI Agents · A/B Testing · Data Intelligence · Negotiation · Seller Portal.
   API docs at <a id="api-docs" href="#" target="_blank">/docs</a>.
 </footer>
 
@@ -1052,6 +1151,323 @@ async function loadMarketIntelligence() {
     el.innerHTML = `<div class="grid6">${cards}</div>
       <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px">${r.total_listings.toLocaleString()} total listings · sorted by median price</div>`;
   } catch(e) { el.innerHTML = `<div style="color:var(--alarm);font-size:12px">${esc(e.message)}</div>`; }
+}
+
+// ── Seller Portal ──────────────────────────────────────────────────────────────
+async function runSellerPortal() {
+  const btn = document.getElementById("seller-btn");
+  const out = document.getElementById("seller-result");
+  const snap = document.getElementById("seller-market-snap");
+  btn.disabled = true; btn.textContent = "Analyzing…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-top:14px" class="loading-dots">Running AVM + market analysis</div>`;
+
+  try {
+    const city     = document.getElementById("sell-city").value;
+    const propType = document.getElementById("sell-type").value;
+    const reno     = document.getElementById("sell-reno").value;
+    const urgency  = document.getElementById("sell-urgency").value;
+    const payoff   = +document.getElementById("sell-payoff").value || 0;
+
+    // Renovation premium multiplier
+    const renoMult = {none:1, minor:1.01, kitchen:1.025, major:1.04}[reno] || 1;
+
+    // Run AVM + market intel in parallel
+    const [avmRes, marketRes] = await Promise.all([
+      j("/v1/avm/predict", {method:"POST", body:JSON.stringify({
+        city, property_type: propType,
+        sqft:    +document.getElementById("sell-sqft").value,
+        beds:    +document.getElementById("sell-beds").value,
+        baths:   +document.getElementById("sell-baths").value,
+        lot_size:+document.getElementById("sell-lot").value || 0,
+        year_built:+document.getElementById("sell-year").value,
+        garage_spaces:+document.getElementById("sell-garage").value || 0,
+        school_score:+document.getElementById("sell-school").value,
+        walk_score:+document.getElementById("sell-walk").value,
+        crime_index:+document.getElementById("sell-crime").value,
+      })}),
+      j("/v1/market/intelligence"),
+    ]);
+
+    const avm   = avmRes.point * renoMult;
+    const lower = avmRes.lower * renoMult;
+    const upper = avmRes.upper * renoMult;
+    const cityData = marketRes.cities.find(c => c.city === city) || {};
+
+    // Market condition
+    const medPrice = cityData.median_price || avm;
+    const cond = medPrice > 1_400_000 ? "hot" : medPrice > 850_000 ? "warm" : medPrice > 500_000 ? "cool" : "cold";
+    const condLabel = {hot:"🔥 HOT",warm:"☀ WARM",cool:"❄ COOL",cold:"🧊 COLD"};
+    const condColor = {hot:"var(--alarm)",warm:"var(--warn)",cool:"var(--champ)",cold:"var(--ok)"};
+
+    // Listing price tiers
+    const tierMults = {
+      hot:  {aggressive:1.08, recommended:1.05, conservative:1.01},
+      warm: {aggressive:1.05, recommended:1.02, conservative:0.99},
+      cool: {aggressive:1.01, recommended:0.995, conservative:0.97},
+      cold: {aggressive:0.98, recommended:0.95, conservative:0.91},
+    }[cond];
+
+    const urgencyAdj = urgency === "urgent" ? -0.02 : urgency === "moderate" ? -0.01 : 0;
+
+    const priceAgg  = Math.round(avm * (tierMults.aggressive + urgencyAdj) / 1000) * 1000;
+    const priceRec  = Math.round(avm * (tierMults.recommended + urgencyAdj) / 1000) * 1000;
+    const priceCons = Math.round(avm * (tierMults.conservative + urgencyAdj) / 1000) * 1000;
+
+    // Net proceeds estimate
+    const closingCosts = 0.06;  // ~6% (agent + transfer + title)
+    const netAgg  = Math.round(priceAgg  * (1 - closingCosts) - payoff);
+    const netRec  = Math.round(priceRec  * (1 - closingCosts) - payoff);
+    const netCons = Math.round(priceCons * (1 - closingCosts) - payoff);
+
+    // Days-on-market risk gauge (0 = fast, 100 = slow)
+    const domRisk = {hot: 15, warm: 35, cool: 65, cold: 82}[cond]
+                  + (urgency === "urgent" ? 0 : urgency === "moderate" ? 5 : 10);
+    const domEstimate = {hot:"7–14", warm:"14–30", cool:"30–60", cold:"60–120"}[cond];
+
+    // Competing listings (approximation from market data)
+    const compCount = cityData.listing_count ? Math.round(cityData.listing_count * 0.04) : "N/A";
+    const pricePerSqft = cityData.median_price_per_sqft;
+
+    // Timing advice (day-of-week model — Thursday/Friday listings get most weekend traffic)
+    const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const dayScores = [55, 60, 62, 65, 88, 92, 70];  // Fri = best
+    const timingCells = days.map((d,i) => {
+      const sc = dayScores[i];
+      const bg = sc >= 85 ? "rgba(249,115,22,.25)" : sc >= 70 ? "rgba(247,185,85,.12)" : "var(--panel-2)";
+      return `<div class="timing-cell" style="background:${bg}"><div class="day">${d}</div><div class="score">${sc}</div></div>`;
+    }).join("");
+
+    // Seller tactics based on condition + urgency
+    const tactics = _sellerTactics(cond, urgency, reno, priceRec, avm, cityData);
+
+    // Top feature contributions from AVM
+    const contribs = Object.entries(avmRes.feature_contributions || {})
+      .sort((a,b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0,4);
+    const contribHTML = contribs.map(([k,v]) =>
+      `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0">
+        <span style="color:var(--muted)">${k.replace(/_/g,' ')}</span>
+        <span style="color:${v>=0?'var(--ok)':'var(--alarm)'};font-weight:600">${v>=0?'+':''}${v.toFixed(3)}</span>
+      </div>`).join("");
+
+    out.innerHTML = `
+      <!-- KPI row -->
+      <div class="seller-kpi" style="margin-top:16px">
+        <div class="seller-kpi-box">
+          <div class="sv">${money(Math.round(avm))}</div>
+          <div class="sl">AVM estimate${reno!=='none'?` (+reno ${((renoMult-1)*100).toFixed(0)}%)`:''}  v${avmRes.model_version}</div>
+        </div>
+        <div class="seller-kpi-box">
+          <div class="sv" style="color:${condColor[cond]}">${condLabel[cond]}</div>
+          <div class="sl">Market condition · ${city}</div>
+        </div>
+        <div class="seller-kpi-box">
+          <div class="sv">${domEstimate} days</div>
+          <div class="sl">Estimated time on market</div>
+        </div>
+        <div class="seller-kpi-box">
+          <div class="sv">${pricePerSqft ? '$'+pricePerSqft.toLocaleString() : '—'}</div>
+          <div class="sl">City median $/sqft</div>
+        </div>
+      </div>
+
+      <!-- Pricing tiers -->
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Listing price strategies${urgency!=='flexible'?` · urgency discount applied`:''}</div>
+        <div class="pricing-tier">
+          <div class="tier-card">
+            <div class="tc-label">Conservative — sell faster</div>
+            <div class="tc-price">${money(priceCons)}</div>
+            <div class="tc-pct" style="color:var(--ok)">${((priceCons/avm-1)*100).toFixed(1)}% of AVM</div>
+            <div class="tc-desc">Lower friction. Attracts more offers, likely sells within 2 weeks. Good if market is cool or you need to move.</div>
+            ${payoff>0?`<div style="font-size:11px;margin-top:8px;color:${netCons>=0?'var(--ok)':'var(--alarm)'}">Net: ${netCons>=0?'$'+netCons.toLocaleString():'−$'+Math.abs(netCons).toLocaleString()}</div>`:''}
+          </div>
+          <div class="tier-card recommended">
+            <div class="tc-label">★ Recommended</div>
+            <div class="tc-price" style="color:#f97316">${money(priceRec)}</div>
+            <div class="tc-pct" style="color:#f97316">${((priceRec/avm-1)*100).toFixed(1)}% of AVM</div>
+            <div class="tc-desc">Balanced approach. Leaves room to negotiate while staying competitive with comparables.</div>
+            ${payoff>0?`<div style="font-size:11px;margin-top:8px;color:${netRec>=0?'var(--ok)':'var(--alarm)'}">Net: ${netRec>=0?'$'+netRec.toLocaleString():'−$'+Math.abs(netRec).toLocaleString()}</div>`:''}
+          </div>
+          <div class="tier-card">
+            <div class="tc-label">Aggressive — maximize price</div>
+            <div class="tc-price">${money(priceAgg)}</div>
+            <div class="tc-pct" style="color:var(--warn)">${((priceAgg/avm-1)*100).toFixed(1)}% of AVM</div>
+            <div class="tc-desc">Higher risk of longer DOM. Best in hot markets or unique properties with few comparables.</div>
+            ${payoff>0?`<div style="font-size:11px;margin-top:8px;color:${netAgg>=0?'var(--ok)':'var(--alarm)'}">Net: ${netAgg>=0?'$'+netAgg.toLocaleString():'−$'+Math.abs(netAgg).toLocaleString()}</div>`:''}
+          </div>
+        </div>
+      </div>
+
+      <!-- DOM risk gauge -->
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Days-on-market risk <span style="float:right;color:var(--text);font-weight:600">${domEstimate} days estimated</span></div>
+        <div class="dom-risk-bar">
+          <div class="dom-risk-marker" style="left:${domRisk}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">
+          <span>Fast (0d)</span><span>Average (30d)</span><span>Stale (90d+)</span>
+        </div>
+      </div>
+
+      <!-- Best listing day -->
+      <div style="margin-top:16px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Optimal listing day <span style="font-size:10px">(score = expected weekend showings)</span></div>
+        <div class="timing-grid">${timingCells}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">★ List Thursday–Friday to maximize first-weekend open-house traffic</div>
+      </div>
+
+      <!-- Price drivers -->
+      <div style="margin-top:16px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Top AVM price drivers (feature contributions)</div>
+        ${contribHTML}
+      </div>
+
+      <!-- Seller tactics -->
+      <div style="margin-top:16px;padding:14px;background:rgba(249,115,22,.06);border:1px solid rgba(249,115,22,.2);border-radius:9px">
+        <div style="font-size:10px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Seller tactics</div>
+        <div style="font-size:13px;line-height:1.65">${esc(tactics)}</div>
+      </div>
+
+      ${payoff > 0 ? `<div style="margin-top:10px;font-size:11px;color:var(--muted)">Net proceeds = list price × (1 − 6% closing costs) − $${payoff.toLocaleString()} payoff. Consult a title company for exact figures.</div>` : ""}
+    `;
+
+    // Neighborhood activity feed (async, non-blocking)
+    loadNeighborhoodFeed(city, propType);
+
+    // Market snapshot panel
+    if (cityData.median_price) {
+      const pt = cityData.property_type_pct || {};
+      const propMix = Object.entries(pt).map(([t,p]) =>
+        `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:var(--muted)">${t.replace(/_/g,' ')}</span><b>${p}%</b></div>`).join("");
+      snap.innerHTML = `
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">${esc(city)} market</div>
+        <div class="kpi">
+          <div class="box"><div class="v">${money(cityData.median_price)}</div><div class="l">Median price</div></div>
+          <div class="box"><div class="v">${cityData.listing_count?.toLocaleString()}</div><div class="l">Listings</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Price range (p25–p75)</div>
+          <div style="font-size:12px;color:var(--text)">${money(cityData.p25_price)} – ${money(cityData.p75_price)}</div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Amenity scores</div>
+          <div style="display:flex;gap:12px;font-size:12px;flex-wrap:wrap">
+            <div>School <b>${cityData.median_school_score}</b>/10</div>
+            <div>Walk <b>${cityData.median_walk_score}</b></div>
+            <div>Crime <b>${cityData.median_crime_index}</b></div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Property mix</div>
+          ${propMix}
+        </div>
+        <div style="margin-top:10px;padding:8px 10px;background:var(--panel-3);border-radius:7px;font-size:12px">
+          Your ${propType.replace(/_/g,' ')} is <b>${pt[propType]?.toFixed(1)||'—'}%</b> of city inventory —
+          ${(pt[propType]||0) < 15 ? "scarce, command a premium" : (pt[propType]||0) > 40 ? "common, price competitively" : "average supply, balanced market"}
+        </div>`;
+    }
+
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:12px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Analyze my listing";
+  }
+}
+
+function _sellerTactics(cond, urgency, reno, listPrice, avm, cityData) {
+  const urgencyNote = urgency === "urgent"
+    ? "You need a fast sale — price conservatively and offer to cover closing costs."
+    : urgency === "moderate"
+    ? "You have 2–3 months — list at or just above AVM and plan a price reduction at day 21 if needed."
+    : "You have flexibility — maximize by holding offers for 7 days after listing.";
+
+  const renoNote = reno === "none"
+    ? "No recent renovations — emphasize structural quality and consider a $500 home warranty to reduce buyer hesitation."
+    : reno === "minor"
+    ? "Minor updates add buyer confidence; highlight in listing photos. Budget +1% for staging."
+    : reno === "kitchen"
+    ? "Kitchen remodels typically return 70–80% of cost in price. Feature it prominently — professional photos of the kitchen are mandatory."
+    : "Major renovations (kitchen + baths) are your strongest differentiators. Get an appraisal to document the improvement value.";
+
+  const condNote = cond === "hot"
+    ? `In ${cityData.city||'this'}'s hot market, hold all offers for 5–7 days to generate a bidding war. Require pre-approval letters with every offer. Counter at ask or above.`
+    : cond === "warm"
+    ? `The ${cityData.city||'this'} market is balanced. List at the recommended price, budget 1–2% for buyer concessions, and plan a $10k–$20k reduction at day 21 if no offers.`
+    : cond === "cool"
+    ? `Inventory is high — buyers have options. Stand out with pre-inspection disclosures, a transferable home warranty, and offer to pay 1–1.5% of buyer closing costs. Price competitively from day one.`
+    : `This is a buyer's market. Price at or below AVM, consider seller financing or rate buydown to unlock more buyers, and respond to every offer within 24 hours.`;
+
+  return `${condNote} ${renoNote} ${urgencyNote}`;
+}
+
+async function loadNeighborhoodFeed(city, propertyType) {
+  const el = document.getElementById("neighborhood-feed");
+  el.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:12px 0" class="loading-dots">Loading neighborhood activity</div>`;
+  try {
+    const params = new URLSearchParams({city, limit:12});
+    if (propertyType) params.set("property_type", propertyType);
+    const r = await j(`/v1/seller/neighborhood-activity?${params}`);
+    const s = r.summary || {};
+
+    // Summary KPIs
+    const summaryHTML = s.avg_avm_error_pct != null ? `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex:1 1 120px">
+          <div style="font-size:18px;font-weight:700;color:${s.avg_sold_vs_asking_pct>=0?'var(--alarm)':'var(--ok)'}">${s.avg_sold_vs_asking_pct>=0?'+':''}${s.avg_sold_vs_asking_pct?.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--muted)">Avg sold vs asking</div>
+        </div>
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex:1 1 120px">
+          <div style="font-size:18px;font-weight:700;color:var(--warn)">${s.pct_sold_above_asking?.toFixed(0)}%</div>
+          <div style="font-size:11px;color:var(--muted)">Sold above asking</div>
+        </div>
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex:1 1 120px">
+          <div style="font-size:18px;font-weight:700;color:var(--champ)">${s.avg_avm_error_pct?.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--muted)">Avg AVM error (MAPE)</div>
+        </div>
+        <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex:1 1 120px">
+          <div style="font-size:18px;font-weight:700">${r.sold_count} sold · ${r.pending_count} pending</div>
+          <div style="font-size:11px;color:var(--muted)">Activity (last 30 days)</div>
+        </div>
+      </div>` : "";
+
+    // Listings table
+    const rows = r.listings.map(l => {
+      const statusColor = l.status === "pending" ? "var(--warn)" : "var(--ok)";
+      const statusDot   = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${statusColor};margin-right:4px;vertical-align:middle"></span>`;
+
+      // Sold vs asking badge
+      let vsAskBadge = "";
+      if (l.sold_vs_asking_pct != null) {
+        const col = l.sold_vs_asking_pct > 0 ? "var(--alarm)" : "var(--ok)";
+        vsAskBadge = `<span style="color:${col};font-weight:600">${l.sold_vs_asking_pct>0?'+':''}${l.sold_vs_asking_pct.toFixed(1)}%</span>`;
+      }
+      // AVM error badge
+      const avmErrColor = l.avm_error_pct < 8 ? "var(--ok)" : l.avm_error_pct < 15 ? "var(--warn)" : "var(--alarm)";
+      const avmBadge = `<span style="color:${avmErrColor};font-size:11px">±${l.avm_error_pct.toFixed(1)}%</span>`;
+
+      return `<tr>
+        <td>${statusDot}<b>${l.status === "pending" ? "Pending" : "Sold"}</b><br><span style="font-size:10px;color:var(--muted)">${l.days_ago}d ago</span></td>
+        <td>${esc(l.property_type.replace(/_/g,' '))}<br><span style="font-size:10px;color:var(--muted)">${l.sqft.toLocaleString()} sqft · ${l.beds}bd/${l.baths}ba · ${l.year_built}</span></td>
+        <td>${money(l.avm_estimate)}<br><span style="font-size:10px;color:var(--muted)">AVM ${avmBadge}</span></td>
+        <td>${money(l.asking_price)}<br><span style="font-size:10px;color:var(--muted)">asking</span></td>
+        <td>${l.sale_price ? money(l.sale_price) : '<span style="color:var(--warn)">—</span>'}<br><span style="font-size:10px">${vsAskBadge || '<span style="color:var(--muted)">pending</span>'}</span></td>
+        <td style="font-size:11px;color:var(--muted)">${l.school_score}/10 school</td>
+      </tr>`;
+    }).join("");
+
+    el.innerHTML = summaryHTML + `
+      <table>
+        <thead><tr>
+          <th>Status</th><th>Property</th><th>AVM</th><th>Asking</th><th>Sold price</th><th>School</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">
+        ${r.total_returned} comparables in ${esc(r.city)}${r.property_type_filter !== 'all' ? ' · ' + r.property_type_filter.replace(/_/g,' ') : ''} · AVM error measured against ground-truth dataset prices
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--alarm);font-size:13px">${esc(e.message)}</div>`;
+  }
 }
 
 // ── Property Comparison ────────────────────────────────────────────────────────
