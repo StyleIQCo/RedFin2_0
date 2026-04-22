@@ -137,6 +137,47 @@ class NLSearchResponse(BaseModel):
     request_id: str
 
 
+# ---------- Vector Store ----------
+class VectorSearchRequest(BaseModel):
+    features: HomeFeatures
+    k: int = Field(10, ge=1, le=50)
+    city: Optional[str] = None
+    max_price: Optional[int] = Field(None, gt=0)
+    min_beds: Optional[int] = Field(None, ge=0)
+    property_type: Optional[str] = None
+
+
+class VectorSearchResult(BaseModel):
+    listing_id: int
+    city: str
+    property_type: str
+    price: int
+    beds: int
+    baths: float
+    sqft: int
+    school_score: float
+    walk_score: int
+    year_built: int
+    similarity_score: float
+
+
+class VectorSearchResponse(BaseModel):
+    query_city: str
+    filters_applied: dict
+    results: List[VectorSearchResult]
+    result_count: int
+    index_size: int
+    request_id: str
+
+
+class VectorStatusResponse(BaseModel):
+    ready: bool
+    index_size: int
+    embedding_dims: int
+    index_type: str
+    persist_dir: str
+
+
 # ---------- AVM Calibration ----------
 class CalibrationBucket(BaseModel):
     label: str
