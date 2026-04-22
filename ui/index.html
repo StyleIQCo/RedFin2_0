@@ -266,6 +266,52 @@ a { color:var(--accent-2); }
 .timing-cell { text-align:center; padding:6px 2px; border-radius:5px; font-size:10px; cursor:default; }
 .timing-cell .day  { font-weight:600; font-size:11px; }
 .timing-cell .score { font-size:10px; color:var(--muted); }
+
+/* Agent Finder tab */
+nav button.finder-tab.active { border-bottom-color:#22d3ee; color:#22d3ee; }
+nav button.intel-tab.active  { border-bottom-color:var(--ok); color:var(--ok); }
+.agent-row { display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:start; padding:14px 0; border-bottom:1px solid var(--border); }
+.agent-row:last-child { border-bottom:none; }
+.agent-avatar { width:44px; height:44px; border-radius:50%; background:var(--panel-2); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.agent-avatar.top { border-color:#22d3ee; }
+.agent-info .agent-name { font-size:15px; font-weight:700; }
+.agent-info .agent-firm { font-size:12px; color:var(--muted); margin-top:1px; }
+.agent-info .agent-tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+.agent-tag { font-size:10px; padding:2px 7px; border-radius:8px; background:rgba(79,107,255,.1); border:1px solid rgba(79,107,255,.25); color:var(--champ); }
+.agent-tag.redfin { background:rgba(255,90,95,.1); border-color:rgba(255,90,95,.3); color:var(--accent); }
+.agent-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px; }
+.agent-stat .sv { font-size:14px; font-weight:700; }
+.agent-stat .sl { font-size:10px; color:var(--muted); }
+.agent-score-col { text-align:center; flex-shrink:0; min-width:80px; }
+.agent-score-col .vs { font-size:28px; font-weight:800; }
+.agent-score-col .vl { font-size:10px; color:var(--muted); }
+.value-bar { height:5px; background:var(--panel-3); border-radius:3px; overflow:hidden; margin-top:4px; }
+.value-bar>div { height:100%; border-radius:3px; }
+.firm-row { display:grid; grid-template-columns:180px 1fr 80px 80px 60px; gap:10px; align-items:start; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.firm-row:last-child { border-bottom:none; }
+.firm-row .fn { font-weight:700; }
+.firm-row .fm { font-size:11px; color:var(--muted); }
+.tech-dots { display:flex; gap:3px; margin-top:2px; }
+.tech-dot { width:9px; height:9px; border-radius:50%; }
+.tech-dot.on  { background:var(--ok); }
+.tech-dot.off { background:var(--panel-3); border:1px solid var(--border); }
+
+/* Market intelligence */
+.intel-signal { display:grid; grid-template-columns:80px 1fr 70px 60px; gap:10px; align-items:start; padding:8px 0; border-bottom:1px solid rgba(35,49,79,.5); font-size:12px; }
+.intel-signal:last-child { border-bottom:none; }
+.intel-cat { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:2px 7px; border-radius:6px; }
+.intel-cat.seasonal    { background:rgba(247,185,85,.12); color:var(--warn); border:1px solid rgba(247,185,85,.3); }
+.intel-cat.development { background:rgba(79,107,255,.1);  color:var(--champ); border:1px solid rgba(79,107,255,.3); }
+.intel-cat.regulatory  { background:rgba(168,85,247,.1);  color:var(--accent-3); border:1px solid rgba(168,85,247,.3); }
+.intel-cat.supply      { background:rgba(55,211,153,.1);  color:var(--ok); border:1px solid rgba(55,211,153,.3); }
+.intel-cat.demand      { background:rgba(249,115,22,.1);  color:#f97316; border:1px solid rgba(249,115,22,.3); }
+.intel-impact.positive { color:var(--ok); font-weight:600; }
+.intel-impact.negative { color:var(--alarm); font-weight:600; }
+.intel-impact.neutral  { color:var(--muted); }
+.trend-badge { display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700; padding:5px 14px; border-radius:20px; }
+.trend-badge.rising   { background:rgba(255,90,95,.12); color:var(--alarm); border:1px solid rgba(255,90,95,.3); }
+.trend-badge.stable   { background:rgba(247,185,85,.12); color:var(--warn); border:1px solid rgba(247,185,85,.3); }
+.trend-badge.declining { background:rgba(55,211,153,.1); color:var(--ok); border:1px solid rgba(55,211,153,.3); }
 </style>
 </head>
 <body>
@@ -281,6 +327,8 @@ a { color:var(--accent-2); }
   <button class="neg-tab" onclick="switchTab('neg',this)">⚑ Negotiate</button>
   <button class="seller-tab" onclick="switchTab('seller',this)">🏷 Seller Portal</button>
   <button class="vs-tab" onclick="switchTab('vs',this)">⚔ vs Competitors</button>
+  <button class="finder-tab" onclick="switchTab('finder',this)">🏠 Find an Agent</button>
+  <button class="intel-tab" onclick="switchTab('intel',this)">◈ Market Intel AI</button>
 </nav>
 
 <!-- ═══ TAB 1 — ML Platform ═══ -->
@@ -806,8 +854,112 @@ a { color:var(--accent-2); }
 </main>
 </div>
 
+<!-- ═══ TAB 8 — Find an Agent ═══ -->
+<div class="tab-pane" id="tab-finder">
+<main>
+
+  <section class="card" style="border-color:rgba(34,211,238,.3)">
+    <h2>Find a Redfin Agent Near You <span class="badge" style="color:#22d3ee;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.3)">🏠 Agent Finder</span></h2>
+    <div class="sub">Compare agent profiles by value score: weighted by commission rate (40%), sales volume (30%), rating (20%), and response speed (10%). Redfin agents at 1.5% always score ahead of 3% traditional agents.</div>
+    <div class="grid2">
+      <div><label>City</label>
+        <select id="finder-city">
+          <option>Seattle</option><option>San Francisco</option><option>Austin</option>
+          <option>Los Angeles</option><option>Portland</option><option>Denver</option>
+          <option>Chicago</option><option>Boston</option><option>Washington DC</option>
+          <option>Atlanta</option><option>Dallas</option><option>Miami</option>
+        </select></div>
+      <div><label>Budget ($)</label>
+        <input id="finder-budget" type="number" value="850000" placeholder="e.g. 850000"/></div>
+    </div>
+    <button id="finder-btn" style="background:#22d3ee;color:#0b1220;font-weight:700" onclick="loadAgentFinder()">Find agents in this city</button>
+    <div id="finder-result">
+      <div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Select a city and click Find to see ranked agent profiles</div>
+    </div>
+  </section>
+
+  <section class="card" style="border-color:rgba(34,211,238,.2);align-self:start">
+    <h2>Brokerage Comparison <span class="badge" style="color:#22d3ee;background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.3)">Firms</span></h2>
+    <div class="sub">Detailed cost breakdown and pros/cons across all major real estate firms at your target budget.</div>
+    <div class="grid2">
+      <div><label>Budget ($)</label>
+        <input id="firm-budget" type="number" value="850000"/></div>
+      <div style="display:flex;align-items:flex-end">
+        <button id="firm-btn" style="background:#22d3ee;color:#0b1220;font-weight:700;width:100%" onclick="loadFirmComparison()">Compare firms</button>
+      </div>
+    </div>
+    <div id="firm-result">
+      <div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Enter a budget and compare</div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<!-- ═══ TAB 9 — Market Intelligence AI ═══ -->
+<div class="tab-pane" id="tab-intel">
+<main>
+
+  <section class="card agent-card">
+    <h2>Market Intelligence AI <span class="badge purple">✦ AI</span></h2>
+    <div class="sub">AI agent that tracks seasonal price cycles, new construction supply, commercial development, regulatory changes, and macro factors — all specific to your city and current month.</div>
+    <div class="grid2">
+      <div><label>City</label>
+        <select id="intel-city">
+          <option>Seattle</option><option>San Francisco</option><option>Austin</option>
+          <option>Los Angeles</option><option>Portland</option><option>Denver</option>
+          <option>Chicago</option><option>Boston</option><option>Washington DC</option>
+          <option>Atlanta</option><option>Dallas</option><option>Miami</option>
+        </select></div>
+      <div><label>Property type (optional)</label>
+        <select id="intel-type">
+          <option value="">All types</option>
+          <option value="single_family">Single family</option>
+          <option value="condo">Condo</option>
+          <option value="townhouse">Townhouse</option>
+          <option value="multi_family">Multi-family</option>
+        </select></div>
+    </div>
+    <div>
+      <label>Known signals (optional)</label>
+      <input id="intel-context" type="text" placeholder="e.g. New light rail station opening Q3, Amazon expanding HQ, school redistricting in 2025…"/>
+    </div>
+    <button id="intel-btn" class="agent" style="width:100%" onclick="runMarketIntelligence()">✦ Analyze market</button>
+    <div id="intel-result">
+      <div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Enter a city and optional context, then click Analyze</div>
+    </div>
+    <div class="agent-framework">
+      <span class="fw-badge openclaw">OpenClaw</span>
+      <span style="font-size:11px;color:var(--muted);align-self:center">→ <code>/v1/agent/market-intel</code></span>
+    </div>
+  </section>
+
+  <section class="card" style="border-color:rgba(55,211,153,.2);align-self:start">
+    <h2>What the AI tracks</h2>
+    <div class="sub">6 signal categories updated with live market stats</div>
+    <div style="margin-top:12px;font-size:13px;line-height:1.75">
+      <div style="margin-bottom:10px"><span class="intel-cat seasonal" style="display:inline-block;margin-right:8px">seasonal</span>Spring surge, winter slowdown, school-year demand cycles</div>
+      <div style="margin-bottom:10px"><span class="intel-cat development" style="display:inline-block;margin-right:8px">development</span>New malls, office parks, transit stations, hospital expansions</div>
+      <div style="margin-bottom:10px"><span class="intel-cat regulatory" style="display:inline-block;margin-right:8px">regulatory</span>Zoning reform, short-term rental bans, property tax changes, school redistricting</div>
+      <div style="margin-bottom:10px"><span class="intel-cat supply" style="display:inline-block;margin-right:8px">supply</span>New construction rate, housing permits, inventory build-up</div>
+      <div style="margin-bottom:10px"><span class="intel-cat demand" style="display:inline-block;margin-right:8px">demand</span>Remote work relocation, tech sector hiring, migration trends</div>
+    </div>
+    <div style="margin-top:14px;padding:12px;background:var(--panel-2);border-radius:8px;border:1px solid var(--border);font-size:12px">
+      <div style="color:var(--ok);font-weight:600;margin-bottom:6px">Data sources</div>
+      <div style="color:var(--muted);line-height:1.65">
+        City stats: 50k listing dataset (median price, construction vintage, school/walk scores)<br>
+        Seasonality: standard NAR seasonal adjustment calendar<br>
+        Development signals: user-provided context + Claude inference<br>
+        Regulatory: Claude knowledge base (Aug 2025 cutoff)
+      </div>
+    </div>
+  </section>
+
+</main>
+</div>
+
 <footer>
-  Redfin ML MVP — AVM · Recommender · AI Agents · A/B Testing · Data Intelligence · Negotiation · Seller Portal.
+  Redfin ML MVP — AVM · Recommender · AI Agents · A/B Testing · Data Intelligence · Negotiation · Seller Portal · Agent Finder · Market Intel.
   API docs at <a id="api-docs" href="#" target="_blank">/docs</a>.
 </footer>
 
@@ -1963,6 +2115,210 @@ async function runNegotiation() {
     btn.disabled = false; btn.textContent = "Analyze strategy";
   }
 }
+
+// ── Agent Finder ──────────────────────────────────────────────────────────────
+async function loadAgentFinder() {
+  const btn = document.getElementById("finder-btn");
+  const out = document.getElementById("finder-result");
+  const city   = document.getElementById("finder-city").value;
+  const budget = +document.getElementById("finder-budget").value || 850000;
+  btn.disabled = true; btn.textContent = "Loading…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:12px 0" class="loading-dots">Finding agents in ${esc(city)}</div>`;
+
+  try {
+    const r = await j(`/v1/agents/nearby?city=${encodeURIComponent(city)}&budget=${budget}`);
+    const scoreColor = v => v >= 80 ? "var(--ok)" : v >= 60 ? "var(--warn)" : "var(--alarm)";
+    const firmColors = {"Redfin":"var(--accent)","Compass":"#f97316","Keller Williams":"#22d3ee","Coldwell Banker":"#a855f7","RE/MAX":"var(--alarm)"};
+
+    const rows = r.agents.map(a => {
+      const isRedfin = a.firm === "Redfin";
+      const col = firmColors[a.firm] || "var(--muted)";
+      const savings = a.savings_vs_redfin;
+      const savingsBadge = savings > 0
+        ? `<span style="color:var(--alarm);font-size:11px;font-weight:600">+$${savings.toLocaleString()} vs Redfin</span>`
+        : savings < 0
+        ? `<span style="color:var(--ok);font-size:11px;font-weight:600">★ $${Math.abs(savings).toLocaleString()} cheaper than avg</span>`
+        : "";
+      const langBadge = a.languages && a.languages.length > 1
+        ? a.languages.slice(1).map(l => `<span class="agent-tag">${esc(l)}</span>`).join("")
+        : "";
+      const specialtyBadges = (a.specialties || []).slice(0,3).map(s =>
+        `<span class="agent-tag ${isRedfin?'redfin':''}">${esc(s)}</span>`).join("");
+
+      return `<div class="agent-row">
+        <div class="agent-avatar ${a.rank===1?'top':''}" style="border-color:${a.rank===1?'#22d3ee':col+'55'}">
+          ${a.rank === 1 ? '★' : a.rank}
+        </div>
+        <div class="agent-info">
+          <div class="agent-name">${esc(a.name)} ${a.recommended?'<span style="font-size:11px;color:#22d3ee;font-weight:600">✓ Top Pick</span>':''}</div>
+          <div class="agent-firm" style="color:${col}">${esc(a.firm)} · ${a.experience} yrs exp</div>
+          <div class="agent-stats">
+            <div class="agent-stat"><div class="sv">${a.sales_12mo}</div><div class="sl">Sales / yr</div></div>
+            <div class="agent-stat"><div class="sv">${a.rating.toFixed(1)}★</div><div class="sl">Rating</div></div>
+            <div class="agent-stat"><div class="sv">${a.response_hrs}h</div><div class="sl">Response</div></div>
+          </div>
+          <div class="agent-tags" style="margin-top:8px">${specialtyBadges}${langBadge}</div>
+          <div style="margin-top:6px;font-size:12px">
+            Commission: <b style="color:${isRedfin?'var(--ok)':'var(--text)'}">
+              ${a.commission_pct}% ($${a.commission_dollars.toLocaleString()})
+            </b> ${savingsBadge}
+          </div>
+        </div>
+        <div class="agent-score-col">
+          <div class="vs" style="color:${scoreColor(a.value_score)}">${a.value_score.toFixed(0)}</div>
+          <div class="vl">value score</div>
+          <div class="value-bar"><div style="width:${a.value_score}%;background:${scoreColor(a.value_score)}"></div></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">${isRedfin?'Tech-first model':'Traditional model'}</div>
+        </div>
+      </div>`;
+    }).join("");
+
+    out.innerHTML = `
+      <div style="margin:14px 0 10px;padding:10px 14px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.2);border-radius:8px;font-size:13px">
+        ${esc(r.market_note)}
+      </div>
+      <div>${rows}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">Value score = Commission 40% · Sales volume 30% · Rating 20% · Response speed 10%</div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Find agents in this city";
+  }
+}
+
+async function loadFirmComparison() {
+  const btn = document.getElementById("firm-btn");
+  const out = document.getElementById("firm-result");
+  const budget = +document.getElementById("firm-budget").value || 850000;
+  btn.disabled = true; btn.textContent = "Loading…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:12px 0" class="loading-dots">Comparing firms</div>`;
+
+  try {
+    const r = await j(`/v1/agents/firms?budget=${budget}`);
+    const techDots = n => [0,1,2,3,4].map(i =>
+      `<span class="tech-dot ${i<n?'on':'off'}"></span>`).join("");
+    const firmColors = {"Redfin":"var(--accent)","Compass":"#f97316","Keller Williams":"#22d3ee","Coldwell Banker":"#a855f7","RE/MAX":"var(--alarm)"};
+
+    const headerRow = `<div class="firm-row" style="border-bottom:2px solid var(--border);padding-bottom:8px;font-size:11px;color:var(--muted);font-weight:600">
+      <div>Firm</div><div>Pros / Cons</div><div>Tech</div><div>Commission</div><div>Rating</div>
+    </div>`;
+
+    const rows = r.firms.map(f => {
+      const col = firmColors[f.firm] || "var(--muted)";
+      const isRedfin = f.firm === "Redfin";
+      const savingsNote = f.savings_vs_redfin > 0
+        ? `<div style="font-size:11px;color:var(--alarm);margin-top:2px">+$${f.savings_vs_redfin.toLocaleString()} vs Redfin</div>`
+        : f.savings_vs_redfin < 0
+        ? `<div style="font-size:11px;color:var(--ok);margin-top:2px">★ Lowest cost</div>`
+        : "";
+      const prosHTML = f.pros.slice(0,2).map(p => `<div style="font-size:11px;color:var(--ok)">✓ ${esc(p)}</div>`).join("");
+      const consHTML = f.cons.slice(0,1).map(p => `<div style="font-size:11px;color:var(--muted)">✗ ${esc(p)}</div>`).join("");
+      const rebadge = f.buyer_rebate ? `<span style="font-size:10px;color:var(--ok);margin-left:4px">+ buyer rebate</span>` : "";
+      return `<div class="firm-row">
+        <div>
+          <div class="fn" style="color:${col}">${esc(f.firm)}</div>
+          <div class="fm">${esc(f.model)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">${esc(f.best_for.slice(0,60))}…</div>
+        </div>
+        <div>${prosHTML}${consHTML}</div>
+        <div>
+          <div class="tech-dots">${techDots(f.tech_rating)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${f.tech_rating}/5</div>
+          <div class="tech-dots" style="margin-top:4px">${techDots(f.local_expertise)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">local ${f.local_expertise}/5</div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:${isRedfin?'var(--ok)':'var(--text)'}">${f.listing_commission_pct}%</div>
+          <div style="font-size:11px">$${f.commission_dollars.toLocaleString()}</div>
+          ${savingsNote}${rebadge}
+        </div>
+        <div style="font-weight:600">${f.avg_rating.toFixed(1)}★</div>
+      </div>`;
+    }).join("");
+
+    out.innerHTML = `
+      <div style="margin:14px 0 10px;font-size:13px;padding:10px 14px;background:rgba(55,211,153,.06);border:1px solid rgba(55,211,153,.2);border-radius:8px">
+        ${esc(r.redfin_advantage)}
+      </div>
+      ${headerRow}${rows}
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">Tech rating = AI tools, data platform, listing exposure · Local expertise = market knowledge depth</div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Compare firms";
+  }
+}
+
+// ── Market Intelligence AI ─────────────────────────────────────────────────────
+async function runMarketIntelligence() {
+  const btn = document.getElementById("intel-btn");
+  const out = document.getElementById("intel-result");
+  btn.disabled = true; btn.innerHTML = '<span class="loading-dots">Analyzing market</span>';
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-top:14px" class="loading-dots">Running AI market analysis</div>`;
+
+  try {
+    const payload = {
+      city:          document.getElementById("intel-city").value,
+      property_type: document.getElementById("intel-type").value || null,
+      context_notes: document.getElementById("intel-context").value.trim() || null,
+    };
+    const r = await j("/v1/agent/market-intel", {method:"POST", body:JSON.stringify(payload)});
+
+    const trendIcon = {rising:"↑",stable:"→",declining:"↓"}[r.price_trend] || "→";
+    const impactIcon = {positive:"▲",negative:"▼",neutral:"●"};
+
+    const signalRows = (r.signals||[]).map(s => `
+      <div class="intel-signal">
+        <div><span class="intel-cat ${s.category}">${esc(s.category)}</span></div>
+        <div style="line-height:1.55">${esc(s.signal)}</div>
+        <div class="intel-impact ${s.impact}">${impactIcon[s.impact]||'●'} ${esc(s.impact)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(s.confidence)}</div>
+      </div>`).join("");
+
+    out.innerHTML = `
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px">
+        <span class="trend-badge ${r.price_trend}">${trendIcon} Prices ${esc(r.price_trend)}</span>
+        <span style="font-size:12px;color:var(--muted)">${esc(r.city)} · ${esc(r.month)} · req ${r.request_id.slice(0,8)}</span>
+      </div>
+
+      <!-- AI narrative -->
+      <div class="narrative-box" style="margin-top:14px">
+        <div class="nar-label">✦ Market Intelligence Report</div>
+        <div style="white-space:pre-line;line-height:1.7">${esc(r.narrative)}</div>
+      </div>
+
+      <!-- Timing advice -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+        <div style="background:rgba(55,211,153,.07);border:1px solid rgba(55,211,153,.2);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;color:var(--ok);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Best time to buy</div>
+          <div style="font-size:13px">${esc(r.best_time_to_buy)}</div>
+        </div>
+        <div style="background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.2);border-radius:8px;padding:12px 14px">
+          <div style="font-size:10px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Best time to sell</div>
+          <div style="font-size:13px">${esc(r.best_time_to_sell)}</div>
+        </div>
+      </div>
+
+      <!-- Signals table -->
+      <div style="margin-top:18px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;display:grid;grid-template-columns:80px 1fr 70px 60px;gap:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">
+          <span>Category</span><span>Signal</span><span>Impact</span><span>Confidence</span>
+        </div>
+        ${signalRows || '<div style="color:var(--muted);font-size:12px">No signals parsed</div>'}
+      </div>
+
+      <div style="margin-top:12px;font-size:11px;color:var(--muted)">
+        Powered by Claude ${_API_KEY_STATUS} · City stats from 50k listing dataset · Knowledge cutoff Aug 2025
+      </div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:12px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "✦ Analyze market";
+  }
+}
+
+const _API_KEY_STATUS = "(haiku-4-5 · mock fallback if no API key)";
 
 // ── Warm-up on load ────────────────────────────────────────────────────────────
 (async () => {

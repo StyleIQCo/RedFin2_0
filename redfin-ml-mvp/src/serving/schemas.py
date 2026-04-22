@@ -137,6 +137,35 @@ class NLSearchResponse(BaseModel):
     request_id: str
 
 
+# ---------- Market Intelligence Agent ----------
+class MarketIntelRequest(BaseModel):
+    city: str = Field(..., examples=["Seattle"])
+    property_type: Optional[str] = Field(None, examples=["single_family"])
+    context_notes: Optional[str] = Field(
+        None, max_length=500,
+        description="Optional context: 'new light rail opening', 'school redistricting', etc.",
+        examples=["New Amazon HQ2 campus opening nearby, expected 5k jobs"],
+    )
+
+
+class MarketIntelSignal(BaseModel):
+    category: str     # "seasonal" | "development" | "regulatory" | "supply" | "demand"
+    signal: str
+    impact: str       # "positive" | "negative" | "neutral"
+    confidence: str   # "high" | "medium" | "low"
+
+
+class MarketIntelResponse(BaseModel):
+    city: str
+    month: str
+    narrative: str
+    signals: List[MarketIntelSignal]
+    price_trend: str     # "rising" | "stable" | "declining"
+    best_time_to_buy: str
+    best_time_to_sell: str
+    request_id: str
+
+
 # ---------- Monitoring ----------
 class DriftReportResponse(BaseModel):
     overall_severity: str

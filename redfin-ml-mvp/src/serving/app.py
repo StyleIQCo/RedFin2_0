@@ -65,6 +65,9 @@ from src.serving.schemas import (
     ExplainResponse,
     HealthResponse,
     HomeFeatures,
+    MarketIntelRequest,
+    MarketIntelResponse,
+    MarketIntelSignal,
     NLSearchRequest,
     NLSearchResponse,
     NegotiationFactor,
@@ -1397,6 +1400,253 @@ def money_str(v: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Agent Finder & Firm Comparison
+# ---------------------------------------------------------------------------
+
+_AGENT_POOL = {
+    # city → list of agent profiles (synthetic but realistic)
+    "Seattle": [
+        {"name": "Sarah Chen", "firm": "Redfin", "experience": 9, "sales_12mo": 34, "avg_sale_price": 870000, "rating": 4.9, "commission_pct": 1.5, "specialties": ["First-time buyers", "Condos", "Capitol Hill"], "response_hrs": 1, "languages": ["English", "Mandarin"]},
+        {"name": "Marcus Webb", "firm": "Redfin", "experience": 6, "sales_12mo": 28, "avg_sale_price": 740000, "rating": 4.8, "commission_pct": 1.5, "specialties": ["Relocation", "Single-family", "Eastside"], "response_hrs": 2, "languages": ["English"]},
+        {"name": "Priya Nair", "firm": "Compass", "experience": 12, "sales_12mo": 41, "avg_sale_price": 1_250_000, "rating": 4.9, "commission_pct": 2.5, "specialties": ["Luxury", "Waterfront", "Mercer Island"], "response_hrs": 3, "languages": ["English", "Hindi"]},
+        {"name": "Tom Gallagher", "firm": "Coldwell Banker", "experience": 18, "sales_12mo": 22, "avg_sale_price": 680000, "rating": 4.7, "commission_pct": 3.0, "specialties": ["Investment", "Multi-family", "South End"], "response_hrs": 6, "languages": ["English"]},
+        {"name": "Yuki Tanaka", "firm": "Keller Williams", "experience": 5, "sales_12mo": 19, "avg_sale_price": 620000, "rating": 4.6, "commission_pct": 2.5, "specialties": ["First-time buyers", "New construction"], "response_hrs": 4, "languages": ["English", "Japanese"]},
+        {"name": "Redfin Team", "firm": "Redfin", "experience": 0, "sales_12mo": 890, "avg_sale_price": 810000, "rating": 4.8, "commission_pct": 1.5, "specialties": ["All price ranges", "Data-driven offers", "Digital closing"], "response_hrs": 0.5, "languages": ["20+ languages via platform"]},
+    ],
+    "San Francisco": [
+        {"name": "Jennifer Park", "firm": "Redfin", "experience": 11, "sales_12mo": 29, "avg_sale_price": 1_380_000, "rating": 4.9, "commission_pct": 1.5, "specialties": ["Condos", "Tech buyers", "SOMA"], "response_hrs": 1, "languages": ["English", "Korean"]},
+        {"name": "David Russo", "firm": "Compass", "experience": 15, "sales_12mo": 38, "avg_sale_price": 2_100_000, "rating": 5.0, "commission_pct": 2.5, "specialties": ["Luxury", "Pacific Heights", "Off-market"], "response_hrs": 2, "languages": ["English", "Italian"]},
+        {"name": "Amy Liang", "firm": "Redfin", "experience": 7, "sales_12mo": 31, "avg_sale_price": 1_150_000, "rating": 4.8, "commission_pct": 1.5, "specialties": ["Investment", "Sunset District", "NL buyers"], "response_hrs": 1, "languages": ["English", "Cantonese"]},
+        {"name": "Robert Kim", "firm": "RE/MAX", "experience": 20, "sales_12mo": 18, "avg_sale_price": 980000, "rating": 4.7, "commission_pct": 3.0, "specialties": ["Probate", "Fixer-uppers", "Richmond District"], "response_hrs": 8, "languages": ["English"]},
+    ],
+    "Austin": [
+        {"name": "Lisa Monroe", "firm": "Redfin", "experience": 5, "sales_12mo": 42, "avg_sale_price": 520000, "rating": 4.8, "commission_pct": 1.5, "specialties": ["Tech relocation", "New builds", "East Austin"], "response_hrs": 1, "languages": ["English", "Spanish"]},
+        {"name": "Carlos Vega", "firm": "Keller Williams", "experience": 8, "sales_12mo": 31, "avg_sale_price": 460000, "rating": 4.7, "commission_pct": 3.0, "specialties": ["Investment", "South Austin", "Acreage"], "response_hrs": 3, "languages": ["English", "Spanish"]},
+        {"name": "Jessica Hall", "firm": "Compass", "experience": 10, "sales_12mo": 27, "avg_sale_price": 780000, "rating": 4.9, "commission_pct": 2.5, "specialties": ["Luxury", "Lake Travis", "New builds"], "response_hrs": 2, "languages": ["English"]},
+        {"name": "Mike Torres", "firm": "RE/MAX", "experience": 14, "sales_12mo": 20, "avg_sale_price": 390000, "rating": 4.6, "commission_pct": 3.0, "specialties": ["First-time buyers", "Round Rock", "Pflugerville"], "response_hrs": 5, "languages": ["English", "Spanish"]},
+    ],
+}
+
+# Fallback pool for cities not in the pool above
+_DEFAULT_AGENTS = [
+    {"name": "Redfin Agent Team", "firm": "Redfin", "experience": 0, "sales_12mo": 200, "avg_sale_price": 0, "rating": 4.8, "commission_pct": 1.5, "specialties": ["All property types", "Data-driven approach"], "response_hrs": 0.5, "languages": ["Multiple via platform"]},
+    {"name": "Top Local Agent", "firm": "Compass", "experience": 10, "sales_12mo": 25, "avg_sale_price": 0, "rating": 4.8, "commission_pct": 2.5, "specialties": ["Luxury", "Relocation"], "response_hrs": 2, "languages": ["English"]},
+    {"name": "Community Agent", "firm": "Keller Williams", "experience": 7, "sales_12mo": 18, "avg_sale_price": 0, "rating": 4.6, "commission_pct": 3.0, "specialties": ["First-time buyers", "Investment"], "response_hrs": 4, "languages": ["English"]},
+    {"name": "Senior Specialist", "firm": "Coldwell Banker", "experience": 15, "sales_12mo": 15, "avg_sale_price": 0, "rating": 4.7, "commission_pct": 3.0, "specialties": ["Estate sales", "Relocation"], "response_hrs": 6, "languages": ["English"]},
+]
+
+_FIRM_PROFILES = {
+    "Redfin": {
+        "model": "Salaried agents + 1.5% listing fee",
+        "buyer_rebate": True,
+        "listing_commission": 1.5,
+        "tech_rating": 5,
+        "local_expertise": 3,
+        "avg_rating": 4.8,
+        "pros": [
+            "Lowest listing fee (1.5% vs 2.5–3% traditional) — saves $5k–$15k on typical home",
+            "Salaried agents — no commission pressure to push you toward a faster/higher sale",
+            "Full tech stack: 3D tours, digital offers, real-time notifications, instant scheduling",
+            "Buyer rebate in 28 states (Redfin Refund) — up to 0.5% of purchase price back",
+            "Data-backed pricing: AVM, comparable sales, days-on-market built into agent workflow",
+            "Consistent experience: agents are employees, quality is standardized not luck-based",
+        ],
+        "cons": [
+            "Less hand-holding than a dedicated traditional agent — more self-service",
+            "In very hot markets or luxury tier, relationship-driven agents may have an edge on off-market inventory",
+            "Agent may handle more clients simultaneously (volume-focused model)",
+        ],
+        "best_for": "Tech-savvy buyers/sellers comfortable with digital workflows who want to maximize savings.",
+    },
+    "Compass": {
+        "model": "Full-service brokerage, 2.5% listing",
+        "buyer_rebate": False,
+        "listing_commission": 2.5,
+        "tech_rating": 4,
+        "local_expertise": 5,
+        "avg_rating": 4.9,
+        "pros": [
+            "Strong off-market and 'Coming Soon' inventory — access listings before they hit Zillow",
+            "Top-tier agents attract top-tier sellers — better deal flow in luxury segments",
+            "Compass Concierge: zero-interest home prep loan to stage/renovate before listing",
+            "Excellent CRM and marketing tools — professional photography, video, staging coordination",
+            "High agent satisfaction → lower turnover → better relationship continuity",
+        ],
+        "cons": [
+            "2.5% listing fee — $5k–$15k more than Redfin on a typical home",
+            "No buyer rebate — buyer pays full 2.5–3% commission",
+            "Agent quality varies — no standardized salary model means some agents prioritize speed",
+            "Less price transparency — harder to compare agent costs upfront",
+        ],
+        "best_for": "Luxury or complex transactions where off-market access and relationship depth matter more than cost.",
+    },
+    "Keller Williams": {
+        "model": "Franchise brokerage, 2.5–3% listing",
+        "buyer_rebate": False,
+        "listing_commission": 2.75,
+        "tech_rating": 3,
+        "local_expertise": 4,
+        "avg_rating": 4.6,
+        "pros": [
+            "Largest real estate franchise — deep local presence in virtually every market",
+            "Strong agent training program (KW University) — well-educated agents",
+            "KW Command CRM — better tech than many traditional brokerages",
+            "Competitive agent splits attract highly motivated agents",
+        ],
+        "cons": [
+            "2.5–3% commission — no discount model",
+            "Tech stack is strong internally but buyer-facing experience is weaker than Redfin/Compass",
+            "Agent quality highly variable — ranges from top producers to part-timers",
+            "No standardized buyer rebate",
+        ],
+        "best_for": "Buyers/sellers who want a well-trained traditional agent with strong local network, and don't mind the full commission.",
+    },
+    "Coldwell Banker": {
+        "model": "Traditional full-service, 3% listing",
+        "buyer_rebate": False,
+        "listing_commission": 3.0,
+        "tech_rating": 2,
+        "local_expertise": 4,
+        "avg_rating": 4.6,
+        "pros": [
+            "One of the oldest, most trusted brands in real estate — brand recognition helps with sellers",
+            "Global Luxury network for high-end international buyers",
+            "Long relationships in established communities — useful for estate sales and inherited properties",
+            "Referral network across markets — good for relocation",
+        ],
+        "cons": [
+            "Highest typical commission (3%) — most expensive option",
+            "Technology is behind Redfin and Compass — less digital, more phone/paper",
+            "No buyer rebate model",
+            "Older agent demographic on average — fewer tech-native approaches",
+        ],
+        "best_for": "Traditional sellers who value brand recognition and a full-service white-glove approach, and are willing to pay for it.",
+    },
+    "RE/MAX": {
+        "model": "High-split franchise, 2.5–3% listing",
+        "buyer_rebate": False,
+        "listing_commission": 2.75,
+        "tech_rating": 3,
+        "local_expertise": 4,
+        "avg_rating": 4.6,
+        "pros": [
+            "High-commission splits attract top-producing, motivated agents",
+            "Global brand presence — useful for relocating buyers",
+            "RE/MAX agents tend to be full-time professionals (model filters out part-timers)",
+            "Strong in suburban and rural markets where other brokerages have thin coverage",
+        ],
+        "cons": [
+            "2.5–3% commission with no discount path",
+            "Balloon model: agent keeps most commission, so brokerage support is minimal",
+            "Tech varies agent-to-agent — no consistent platform like Compass or Redfin",
+        ],
+        "best_for": "Buyers/sellers who want a highly motivated, full-time agent in suburban or rural markets.",
+    },
+}
+
+
+@app.get("/v1/agents/nearby", tags=["agents"])
+def agents_nearby(city: str, budget: int = 0, request: Request = None) -> dict:
+    """Return ranked agent profiles for a city with cost breakdown and value scores.
+
+    Agents are sorted by a composite value score that weights commission rate (40%),
+    sales volume/experience (30%), rating (20%), and response speed (10%).
+    The cost breakdown shows the actual dollar cost at the given budget.
+    """
+    pool = _AGENT_POOL.get(city, _DEFAULT_AGENTS)
+
+    # Fill in avg_sale_price from city market data if 0 (for default pool)
+    if budget == 0:
+        try:
+            ref_df = feature_store.get_training_df()
+            city_rows = ref_df[ref_df["city"] == city]
+            budget = int(city_rows["price"].median()) if len(city_rows) > 0 else 800_000
+        except Exception:
+            budget = 800_000
+
+    agents = []
+    for raw in pool:
+        a = dict(raw)
+        if a["avg_sale_price"] == 0:
+            a["avg_sale_price"] = budget
+
+        commission_dollars = int(budget * a["commission_pct"] / 100)
+        firm_profile = _FIRM_PROFILES.get(a["firm"], {})
+        redfin_cost = int(budget * 1.5 / 100)
+        savings_vs_redfin = commission_dollars - redfin_cost
+
+        # Value score: lower commission = better base, adjusted by performance
+        commission_score = max(0, 100 - (a["commission_pct"] - 1.5) * 20)  # 1.5% → 100, 3% → 70
+        volume_score = min(100, a["sales_12mo"] * 2.5)  # 40 sales → 100
+        rating_score = (a["rating"] - 4.0) / 1.0 * 100   # 4.0→0, 5.0→100
+        speed_score = max(0, 100 - a["response_hrs"] * 12)  # 0hr→100, 8hr→4
+
+        value_score = (
+            commission_score * 0.40
+            + volume_score * 0.30
+            + rating_score * 0.20
+            + speed_score * 0.10
+        )
+
+        a["commission_dollars"] = commission_dollars
+        a["savings_vs_redfin"] = savings_vs_redfin
+        a["value_score"] = round(value_score, 1)
+        a["firm_profile"] = {
+            "tech_rating": firm_profile.get("tech_rating", 3),
+            "local_expertise": firm_profile.get("local_expertise", 3),
+            "buyer_rebate": firm_profile.get("buyer_rebate", False),
+            "best_for": firm_profile.get("best_for", ""),
+        }
+        agents.append(a)
+
+    agents.sort(key=lambda x: x["value_score"], reverse=True)
+    for i, a in enumerate(agents):
+        a["rank"] = i + 1
+        a["recommended"] = (i == 0)
+
+    return {
+        "city": city,
+        "budget": budget,
+        "agents": agents,
+        "market_note": f"Commission rates are negotiable. Redfin's 1.5% listing fee saves ${int(budget * 0.015):,} vs the typical 3% — without sacrificing tech or service quality.",
+    }
+
+
+@app.get("/v1/agents/firms", tags=["agents"])
+def agent_firms(budget: int = 800_000) -> dict:
+    """Firm-level comparison: commission rates, value scores, pros/cons, best-for.
+
+    Budget is used to compute the actual dollar cost per firm so the comparison
+    is concrete rather than abstract percentages.
+    """
+    firms = []
+    for name, profile in _FIRM_PROFILES.items():
+        commission_dollars = int(budget * profile["listing_commission"] / 100)
+        redfin_dollars = int(budget * 1.5 / 100)
+        firms.append({
+            "firm": name,
+            "model": profile["model"],
+            "listing_commission_pct": profile["listing_commission"],
+            "commission_dollars": commission_dollars,
+            "savings_vs_redfin": commission_dollars - redfin_dollars,
+            "buyer_rebate": profile["buyer_rebate"],
+            "tech_rating": profile["tech_rating"],
+            "local_expertise": profile["local_expertise"],
+            "avg_rating": profile["avg_rating"],
+            "pros": profile["pros"],
+            "cons": profile["cons"],
+            "best_for": profile["best_for"],
+        })
+
+    firms.sort(key=lambda x: x["listing_commission_pct"])
+    return {
+        "budget": budget,
+        "firms": firms,
+        "redfin_advantage": f"On a ${budget:,} home, Redfin saves you ${int(budget * 0.015):,} vs a 3% listing agent — enough to cover closing costs.",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Competitive Analysis
 # ---------------------------------------------------------------------------
 
@@ -1754,3 +2004,62 @@ def neighborhood_activity(
         "summary": summary,
         "listings": results,
     }
+
+
+# ---------------------------------------------------------------------------
+# Market Intelligence Agent
+# ---------------------------------------------------------------------------
+
+@app.post("/v1/agent/market-intel", response_model=MarketIntelResponse, tags=["agent"])
+async def market_intelligence(req: MarketIntelRequest, request: Request) -> MarketIntelResponse:
+    """AI-powered market intelligence: seasonal patterns, new construction, development signals.
+
+    Calls Claude (haiku) with live city statistics to generate a multi-factor market
+    intelligence report covering seasonal effects, new construction trends, commercial
+    development impact, regulatory context, and a 3–6 month price outlook.
+    Falls back to a rule-based report when no API key is set.
+    """
+    # Build city stats from training data
+    city_stats: dict = {}
+    try:
+        raw_df = feature_store.get_training_df()
+        city_df = raw_df[raw_df["city"] == req.city]
+        if len(city_df) > 0:
+            prices = city_df["price"].astype(float)
+            city_stats = {
+                "median_price": float(prices.median()),
+                "p25_price": float(prices.quantile(0.25)),
+                "p75_price": float(prices.quantile(0.75)),
+                "median_sqft": float(city_df["sqft"].median()),
+                "listing_count": int(len(city_df)),
+                "median_year_built": float(city_df["year_built"].median()),
+                "recent_construction_pct": float((city_df["year_built"] >= 2015).mean() * 100),
+                "median_school_score": float(city_df["school_score"].median()),
+                "median_walk_score": float(city_df["walk_score"].median()),
+                "median_crime_index": float(city_df["crime_index"].median()),
+            }
+            if req.property_type:
+                type_df = city_df[city_df["property_type"] == req.property_type]
+                if len(type_df) > 0:
+                    city_stats["type_median_price"] = float(type_df["price"].median())
+                    city_stats["type_listing_count"] = int(len(type_df))
+    except Exception:
+        pass
+
+    result = agent_llm.market_intelligence_agent(
+        city=req.city,
+        property_type=req.property_type,
+        city_stats=city_stats,
+        context_notes=req.context_notes or "",
+    )
+
+    return MarketIntelResponse(
+        city=req.city,
+        month=time.strftime("%B %Y"),
+        narrative=result["narrative"],
+        signals=[MarketIntelSignal(**s) for s in result["signals"]],
+        price_trend=result["price_trend"],
+        best_time_to_buy=result["best_time_to_buy"],
+        best_time_to_sell=result["best_time_to_sell"],
+        request_id=str(uuid.uuid4()),
+    )

@@ -381,6 +381,192 @@ def _mock_negotiation_tactics(features: dict, strategy: dict) -> dict:
     return {"buyer_tactic": b, "seller_tactic": s}
 
 
+def market_intelligence_agent(
+    city: str,
+    property_type: Optional[str],
+    city_stats: dict,
+    context_notes: str,
+) -> dict:
+    """Generate multi-factor market intelligence: seasonal, development, regulatory signals."""
+    import datetime
+    month = datetime.datetime.now().month
+    month_name = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][month-1]
+
+    system = (
+        "You are a senior real estate market analyst. Given city statistics and contextual signals, "
+        "provide a comprehensive market intelligence report covering:\n"
+        "1. Seasonal price patterns for the current month\n"
+        "2. New construction activity and supply effects\n"
+        "3. Infrastructure & commercial development signals (transit, retail, office parks)\n"
+        "4. Regulatory and macroeconomic factors (zoning, interest rates, tax law)\n"
+        "5. Near-term price trajectory (3–6 month outlook)\n\n"
+        "Format EXACTLY as:\n"
+        "NARRATIVE: <2–3 paragraphs>\n"
+        "PRICE_TREND: rising|stable|declining\n"
+        "BUY_TIMING: <one sentence>\n"
+        "SELL_TIMING: <one sentence>\n"
+        "SIGNALS:\n"
+        "- CATEGORY: seasonal | SIGNAL: <text> | IMPACT: positive|negative|neutral | CONFIDENCE: high|medium|low\n"
+        "(list 5–7 signals covering different categories)"
+    )
+    user = (
+        f"City: {city}\n"
+        f"Property focus: {property_type or 'all types'}\n"
+        f"Current month: {month} ({month_name})\n"
+        f"City statistics (from 50k listings dataset):\n{json.dumps(city_stats, indent=2)}\n"
+        f"User context / known signals: {context_notes or 'none provided'}\n\n"
+        "Generate the market intelligence report."
+    )
+    result = call_llm(system, user, max_tokens=700)
+    if result == "__MOCK__":
+        return _mock_market_intelligence(city, city_stats, context_notes, month)
+
+    import re
+    narrative = ""
+    price_trend = "stable"
+    best_time_to_buy = "Spring (March–May) typically offers the widest inventory selection."
+    best_time_to_sell = "List in March–April to capture peak spring buyer demand."
+    signals = []
+
+    nm = re.search(r"NARRATIVE:\s*(.*?)(?:PRICE_TREND:|$)", result, re.DOTALL | re.IGNORECASE)
+    if nm:
+        narrative = nm.group(1).strip()
+    tm = re.search(r"PRICE_TREND:\s*(\w+)", result, re.IGNORECASE)
+    if tm and tm.group(1).lower() in ("rising", "stable", "declining"):
+        price_trend = tm.group(1).lower()
+    bm = re.search(r"BUY_TIMING:\s*(.*?)(?:\n|SELL_TIMING:)", result, re.DOTALL | re.IGNORECASE)
+    if bm:
+        best_time_to_buy = bm.group(1).strip()
+    sm = re.search(r"SELL_TIMING:\s*(.*?)(?:\n|SIGNALS:)", result, re.DOTALL | re.IGNORECASE)
+    if sm:
+        best_time_to_sell = sm.group(1).strip()
+    for m in re.finditer(
+        r"CATEGORY:\s*(\w+)\s*\|\s*SIGNAL:\s*(.*?)\s*\|\s*IMPACT:\s*(\w+)\s*\|\s*CONFIDENCE:\s*(\w+)",
+        result, re.IGNORECASE,
+    ):
+        cat = m.group(1).lower()
+        imp = m.group(3).lower()
+        conf = m.group(4).lower()
+        signals.append({
+            "category": cat,
+            "signal": m.group(2).strip(),
+            "impact": imp if imp in ("positive", "negative", "neutral") else "neutral",
+            "confidence": conf if conf in ("high", "medium", "low") else "medium",
+        })
+
+    if not narrative:
+        return _mock_market_intelligence(city, city_stats, context_notes, month)
+
+    return {
+        "narrative": narrative,
+        "signals": signals,
+        "price_trend": price_trend,
+        "best_time_to_buy": best_time_to_buy,
+        "best_time_to_sell": best_time_to_sell,
+    }
+
+
+def _mock_market_intelligence(city: str, city_stats: dict, context_notes: str, month: int) -> dict:
+    """Rule-based fallback when no API key is available."""
+    median = city_stats.get("median_price", 750_000)
+    recent_construction_pct = city_stats.get("recent_construction_pct", 15.0)
+    median_year = city_stats.get("median_year_built", 1995)
+    median_school = city_stats.get("median_school_score", 7.0)
+    listing_count = city_stats.get("listing_count", 5000)
+
+    # Market tier
+    if median > 1_400_000:
+        tier = "premium"
+        trend = "rising"
+        trend_note = f"{city} remains a premium market with constrained inventory. Prices continue to appreciate as demand from tech and finance sectors outpaces supply."
+    elif median > 850_000:
+        tier = "high"
+        trend = "stable"
+        trend_note = f"{city}'s market is normalizing after post-pandemic appreciation. Prices have stabilized with modest year-over-year growth of 2–4%."
+    elif median > 500_000:
+        tier = "mid"
+        trend = "stable"
+        trend_note = f"{city} offers relative affordability, attracting relocation demand. Supply is balanced but new construction is adding pressure in the mid range."
+    else:
+        tier = "value"
+        trend = "declining"
+        trend_note = f"{city} is experiencing softening demand as buyers have more options and mortgage rates remain elevated. Seller concessions are becoming common."
+
+    # Seasonal signals
+    spring = month in (3, 4, 5)
+    summer = month in (6, 7, 8)
+    fall   = month in (9, 10, 11)
+    if spring:
+        season_signal = "Peak spring listing season — inventory up 15–25%. More choices for buyers but also more competition."
+        season_impact = "positive"
+        buy_time = "Now (spring) is ideal for selection — inventory is at its annual peak."
+        sell_time = "List immediately — spring demand typically closes 8–12% faster than fall listings."
+    elif summer:
+        season_signal = "Summer market: slightly lower inventory as families pause. Back-to-school relocation demand peaks in July."
+        season_impact = "neutral"
+        buy_time = "Late summer (August) often sees price reductions as overpriced listings age — good negotiating position."
+        sell_time = "Price competitively — summer buyers are motivated but supply is still adequate."
+    elif fall:
+        season_signal = "Fall slowdown begins in October. Listing volume drops 20–30%, but serious buyers remain active."
+        season_impact = "neutral"
+        buy_time = "Fall offers reduced competition — you may be the only offer on the table."
+        sell_time = "List by mid-September to catch fall buyers before the holiday freeze."
+    else:  # winter
+        season_signal = "Winter market: lowest inventory of the year. Fewer listings but motivated sellers."
+        season_impact = "negative"
+        buy_time = "Winter buyers face limited choices but can negotiate more — sellers who list in Jan/Feb are motivated."
+        sell_time = "Avoid listing Dec–Jan unless urgent; spring lists typically command 3–5% premium."
+
+    construction_note = (
+        f"{recent_construction_pct:.0f}% of {city} listings are post-2015 construction, "
+        + ("indicating active new supply that caps appreciation in the mid-price segment." if recent_construction_pct > 20
+           else "showing limited new supply — older housing stock supports tighter inventory.")
+    )
+
+    context_signal = None
+    if context_notes:
+        context_signal = {
+            "category": "development",
+            "signal": f"User-reported signal: {context_notes}. This type of development typically increases nearby values 3–8% within 18 months.",
+            "impact": "positive",
+            "confidence": "medium",
+        }
+
+    inventory_desc = "a tight market by historical standards" if listing_count < 3000 else "adequate for current demand levels"
+    school_impact = "homes near top-rated schools command a 10–15% premium" if median_school >= 7.5 else "mid-rated schools have less price impact"
+    macro_cta = "Watch for zoning reform discussions in high-cost cities that could unlock ADU and density opportunities." if tier in ("premium", "high") else "Value-tier markets are most sensitive to rate changes — any Fed cut could quickly re-inflate demand."
+    vintage_note = "aging stock — kitchen/bath updates add 5–8% value" if median_year < 1990 else "relatively modern inventory with lower deferred maintenance risk"
+
+    narrative = (
+        f"{trend_note}\n\n"
+        f"Supply dynamics: {construction_note} The city has {listing_count:,} active listings, "
+        f"{inventory_desc}. "
+        f"School quality (median {median_school:.1f}/10) is a sustained demand driver — {school_impact}.\n\n"
+        f"Macro context: Interest rates above 6.5% continue to suppress affordability and reduce transaction volume. "
+        f"Buyers who can secure below-market rates or pay cash have significant negotiating advantage. "
+        f"{macro_cta}"
+    )
+
+    signals = [
+        {"category": "seasonal", "signal": season_signal, "impact": season_impact, "confidence": "high"},
+        {"category": "supply", "signal": construction_note, "impact": "negative" if recent_construction_pct > 20 else "positive", "confidence": "high"},
+        {"category": "demand", "signal": f"School quality (avg {median_school:.1f}/10) sustains buyer demand for family homes near top districts.", "impact": "positive", "confidence": "high"},
+        {"category": "regulatory", "signal": "Fed rate policy: elevated mortgage rates (6.5–7%) constrain buyer pool, extending average DOM.", "impact": "negative", "confidence": "high"},
+        {"category": "development", "signal": f"Median home vintage ({int(median_year)}) suggests {vintage_note}.", "impact": "neutral", "confidence": "medium"},
+        {"category": "demand", "signal": f"Remote work flexibility continues to drive {city} relocation demand from higher-cost coastal markets.", "impact": "positive", "confidence": "medium"},
+    ]
+    if context_signal:
+        signals.insert(1, context_signal)
+
+    return {
+        "narrative": narrative,
+        "signals": signals,
+        "price_trend": trend,
+        "best_time_to_buy": buy_time,
+        "best_time_to_sell": sell_time,
+    }
+
+
 def parse_search_query(query: str) -> dict:
     """Convert a natural-language home search query into structured filter params."""
     system = (
