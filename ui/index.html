@@ -296,6 +296,28 @@ nav button.intel-tab.active  { border-bottom-color:var(--ok); color:var(--ok); }
 .tech-dot.on  { background:var(--ok); }
 .tech-dot.off { background:var(--panel-3); border:1px solid var(--border); }
 
+/* What-If Analysis */
+.whatif-row { display:grid; grid-template-columns:1fr 90px 90px 90px; gap:8px; align-items:center; padding:6px 0; border-bottom:1px solid rgba(35,49,79,.5); font-size:12px; }
+.whatif-row:last-child { border-bottom:none; }
+.whatif-delta { font-weight:700; }
+.whatif-delta.pos { color:var(--ok); }
+.whatif-delta.neg { color:var(--alarm); }
+.whatif-bar-wrap { height:6px; background:var(--panel-3); border-radius:3px; overflow:hidden; }
+.whatif-bar-pos { height:100%; border-radius:3px; background:var(--ok); }
+.whatif-bar-neg { height:100%; border-radius:3px; background:var(--alarm); }
+
+/* Calibration & Fairness */
+.cal-bucket { display:grid; grid-template-columns:1fr 60px 60px 50px; gap:8px; align-items:center; padding:5px 0; border-bottom:1px solid rgba(35,49,79,.5); font-size:12px; }
+.cal-bucket:last-child { border-bottom:none; }
+.cal-ok   { color:var(--ok);    font-weight:600; font-size:11px; }
+.cal-warn { color:var(--alarm); font-weight:600; font-size:11px; }
+
+/* Forecast chart */
+.forecast-chart { display:flex; align-items:flex-end; gap:4px; height:90px; margin:14px 0 6px; }
+.forecast-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
+.forecast-bar { width:100%; border-radius:3px 3px 0 0; background:linear-gradient(0deg, var(--champ), var(--accent-3)); min-height:4px; }
+.forecast-label { font-size:9px; color:var(--muted); white-space:nowrap; transform:rotate(-40deg); transform-origin:top right; margin-top:4px; }
+
 /* Market intelligence */
 .intel-signal { display:grid; grid-template-columns:80px 1fr 70px 60px; gap:10px; align-items:start; padding:8px 0; border-bottom:1px solid rgba(35,49,79,.5); font-size:12px; }
 .intel-signal:last-child { border-bottom:none; }
@@ -370,6 +392,17 @@ nav button.intel-tab.active  { border-bottom-color:var(--ok); color:var(--ok); }
       <button id="explain-btn" class="agent" style="width:100%;margin-top:12px">✦ Explain this estimate (AI)</button>
       <div id="explain-result"></div>
     </div>
+  </section>
+
+  <!-- What-If Analysis -->
+  <section class="card full">
+    <h2>What-If Price Sensitivity <span class="badge green">AVM</span></h2>
+    <div class="sub">See how changing individual features affects the predicted price — great for renovation ROI analysis and pricing negotiations.</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button id="whatif-btn" class="ok-btn" onclick="runWhatIf()">Run sensitivity analysis (uses ML Platform inputs)</button>
+      <span style="font-size:12px;color:var(--muted)">Perturbs sqft, beds, baths, school score, walk score, crime index, year built, garage, lot size</span>
+    </div>
+    <div id="whatif-result"></div>
   </section>
 
   <section>
@@ -502,7 +535,9 @@ nav button.intel-tab.active  { border-bottom-color:var(--ok); color:var(--ok); }
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button id="retrain-btn">🚀 Retrain Challenger</button>
       <button id="load-chal-btn" class="ghost" disabled>⚡ Load Challenger</button>
+      <button id="auto-promote-btn" class="ok-btn" onclick="runAutoPromote()">⬆ Auto-Promote</button>
     </div>
+    <div id="auto-promote-result"></div>
     <div id="retrain-result" style="margin-top:14px"></div>
   </section>
 
@@ -529,6 +564,36 @@ nav button.intel-tab.active  { border-bottom-color:var(--ok); color:var(--ok); }
       <button id="dist-refresh-btn" class="ghost" style="margin-top:0;padding:6px 12px;font-size:12px">Refresh</button>
     </div>
     <div id="dist-list"><div style="color:var(--muted);font-size:13px;padding:20px 0;text-align:center">Loading distributions…</div></div>
+  </section>
+
+  <!-- AVM Calibration -->
+  <section class="card data-card">
+    <h2>AVM Calibration Report <span class="badge green">CI Coverage</span></h2>
+    <div class="sub">Empirical check: do our 90% confidence intervals actually contain 90% of true prices? Breakdown by city, property type, and price tier.</div>
+    <button id="cal-btn" class="ok-btn" style="margin-bottom:8px" onclick="loadCalibration()">Run calibration check</button>
+    <div id="cal-result"><div style="color:var(--muted);font-size:12px;padding:12px 0;text-align:center">Click to evaluate CI calibration across all segments</div></div>
+  </section>
+
+  <!-- Fairness Audit -->
+  <section class="card data-card">
+    <h2>Fairness Audit <span class="badge green">CFPB</span></h2>
+    <div class="sub">MAPE by city, property type, and price tier — ensures the AVM doesn't systematically discriminate across market segments (CFPB fair lending context).</div>
+    <button id="fair-btn" class="ok-btn" style="margin-bottom:8px" onclick="loadFairnessAudit()">Run fairness audit</button>
+    <div id="fair-result"><div style="color:var(--muted);font-size:12px;padding:12px 0;text-align:center">Click to audit model equity across all segments</div></div>
+  </section>
+
+  <!-- Market Forecast -->
+  <section class="card data-card full">
+    <h2>Market Price Forecast <span class="badge green">6-Month Outlook</span></h2>
+    <div class="sub">Linear trend + NAR seasonal decomposition with 90% prediction intervals. Fits price appreciation from historical vintage data; widens CI with forecast horizon.</div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div><label>City</label>
+        <select id="fc-city"><option>Seattle</option><option>San Francisco</option><option>Austin</option><option>Los Angeles</option><option>Portland</option><option>Denver</option><option>Chicago</option><option>Boston</option><option>Washington DC</option><option>Atlanta</option><option>Dallas</option><option>Miami</option></select></div>
+      <div><label>Months to forecast</label>
+        <select id="fc-months"><option value="3">3 months</option><option value="6" selected>6 months</option><option value="9">9 months</option><option value="12">12 months</option></select></div>
+    </div>
+    <button id="fc-btn" class="ok-btn" onclick="loadForecast()">Generate forecast</button>
+    <div id="fc-result"><div style="color:var(--muted);font-size:12px;padding:12px 0;text-align:center">Select a city and click Generate to see the price trajectory</div></div>
   </section>
 
   <!-- Market Intelligence -->
@@ -2113,6 +2178,209 @@ async function runNegotiation() {
     out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:12px">${esc(e.message)}</div>`;
   } finally {
     btn.disabled = false; btn.textContent = "Analyze strategy";
+  }
+}
+
+// ── What-If Analysis ──────────────────────────────────────────────────────────
+async function runWhatIf() {
+  const btn = document.getElementById("whatif-btn");
+  const out = document.getElementById("whatif-result");
+  btn.disabled = true; btn.textContent = "Running…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:13px;margin-top:10px" class="loading-dots">Running AVM on 10 perturbations</div>`;
+  try {
+    const r = await j("/v1/avm/what-if", {method:"POST", body:JSON.stringify({features: homePayload()})});
+    const maxAbs = Math.max(...r.results.map(x => Math.abs(x.delta_dollars)));
+    const header = `<div class="whatif-row" style="border-bottom:2px solid var(--border);padding-bottom:8px;font-size:11px;color:var(--muted);font-weight:600">
+      <span>Perturbation</span><span>Base → New</span><span>Δ Price</span><span>Δ %</span>
+    </div>`;
+    const rows = r.results.map(res => {
+      const pos = res.delta_dollars >= 0;
+      const barW = Math.min(100, Math.abs(res.delta_dollars) / maxAbs * 100);
+      return `<div class="whatif-row">
+        <div>
+          <b>${esc(res.feature)}</b>
+          <div style="margin-top:2px">
+            <div class="whatif-bar-wrap"><div class="${pos?'whatif-bar-pos':'whatif-bar-neg'}" style="width:${barW}%"></div></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">${res.original_value} → ${res.new_value}</div>
+        <div class="whatif-delta ${pos?'pos':'neg'}">${pos?'+':''}${money(res.delta_dollars)}</div>
+        <div class="whatif-delta ${pos?'pos':'neg'}">${res.delta_pct > 0?'+':''}${res.delta_pct.toFixed(1)}%</div>
+      </div>`;
+    }).join("");
+    out.innerHTML = `
+      <div style="margin-top:14px;font-size:12px;color:var(--muted);margin-bottom:8px">Base price: <b style="color:var(--text);font-size:16px">${money(r.base_price)}</b> · sorted by absolute impact</div>
+      ${header}${rows}
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">Each row runs a separate AVM call with one feature changed. Other features held constant at ML Platform inputs.</div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px;margin-top:10px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Run sensitivity analysis (uses ML Platform inputs)";
+  }
+}
+
+// ── Auto-Promote ───────────────────────────────────────────────────────────────
+async function runAutoPromote() {
+  const btn = document.getElementById("auto-promote-btn");
+  const out = document.getElementById("auto-promote-result");
+  btn.disabled = true; btn.textContent = "Evaluating…";
+  try {
+    const r = await j("/v1/ops/auto-promote", {method:"POST", body:"{}"});
+    const color = r.promoted ? "var(--ok)" : "var(--muted)";
+    out.innerHTML = `
+      <div style="margin-top:10px;padding:10px 12px;background:${r.promoted?'rgba(55,211,153,.07)':'rgba(247,185,85,.06)'};border:1px solid ${r.promoted?'rgba(55,211,153,.25)':'rgba(247,185,85,.2)'};border-radius:8px;font-size:13px">
+        <div style="font-weight:600;color:${color};margin-bottom:6px">${r.promoted ? '⬆ Promoted!' : '✗ Gate not met'}</div>
+        <div style="color:var(--muted);font-size:12px">${esc(r.reason || (r.promoted ? 'Challenger promoted to champion.' : ''))}</div>
+        ${r.champion_mape!=null?`<div class="grid3" style="margin-top:8px">
+          <div><div style="font-size:11px;color:var(--muted)">Champ MAPE</div><b>${r.champion_mape}%</b></div>
+          <div><div style="font-size:11px;color:var(--muted)">Chal MAPE</div><b>${r.challenger_mape}%</b></div>
+          <div><div style="font-size:11px;color:var(--muted)">Chal Coverage</div><b>${(r.challenger_coverage*100).toFixed(1)}%</b></div>
+        </div>`:''}
+      </div>`;
+    if (r.promoted) await refreshABStats();
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:12px;margin-top:8px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "⬆ Auto-Promote";
+  }
+}
+
+// ── AVM Calibration ────────────────────────────────────────────────────────────
+async function loadCalibration() {
+  const btn = document.getElementById("cal-btn");
+  const out = document.getElementById("cal-result");
+  btn.disabled = true; btn.textContent = "Running…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px 0" class="loading-dots">Scoring all listings against AVM 90% CI…</div>`;
+  try {
+    const r = await j("/v1/avm/calibration");
+    const covColor = Math.abs(r.overall_coverage - r.target_coverage) < 0.05 ? "var(--ok)" : "var(--alarm)";
+    const header = `<div class="cal-bucket" style="border-bottom:2px solid var(--border);padding-bottom:8px;font-size:11px;color:var(--muted);font-weight:600">
+      <span>Segment</span><span>N</span><span>Coverage</span><span>Status</span>
+    </div>`;
+    const rows = r.buckets.map(b => `
+      <div class="cal-bucket">
+        <span>${esc(b.label)}</span>
+        <span style="color:var(--muted)">${b.n.toLocaleString()}</span>
+        <span style="font-weight:600;color:${Math.abs(b.coverage - r.target_coverage) < 0.05 ? 'var(--ok)' : 'var(--alarm)'}">${(b.coverage*100).toFixed(1)}%</span>
+        <span class="${b.well_calibrated ? 'cal-ok' : 'cal-warn'}">${b.well_calibrated ? '✓' : '⚠'}</span>
+      </div>`).join("");
+
+    out.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:32px;font-weight:800;color:${covColor}">${(r.overall_coverage*100).toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--muted)">actual coverage<br>(target ${(r.target_coverage*100).toFixed(0)}%)</div>
+        </div>
+        <div class="kpi" style="flex:1">
+          <div class="box"><div class="v" style="color:${r.is_well_calibrated?'var(--ok)':'var(--alarm)'}">${r.is_well_calibrated?'✓ Good':'⚠ Off'}</div><div class="l">Calibration</div></div>
+          <div class="box"><div class="v">${r.mape}%</div><div class="l">MAPE</div></div>
+          <div class="box"><div class="v">${r.median_ape}%</div><div class="l">Median APE</div></div>
+          <div class="box"><div class="v">${r.n_total.toLocaleString()}</div><div class="l">Listings tested</div></div>
+        </div>
+      </div>
+      ${header}${rows}
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">Well-calibrated = coverage within ±5% of the nominal 90% CI. In production, this runs on a held-out test set.</div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Run calibration check";
+  }
+}
+
+// ── Fairness Audit ─────────────────────────────────────────────────────────────
+async function loadFairnessAudit() {
+  const btn = document.getElementById("fair-btn");
+  const out = document.getElementById("fair-result");
+  btn.disabled = true; btn.textContent = "Auditing…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px 0" class="loading-dots">Running AVM on 3,000 sampled listings…</div>`;
+  try {
+    const r = await j("/v1/avm/fairness");
+    const flagColor = r.disparate_impact_flag ? "var(--alarm)" : "var(--ok)";
+    const header = `<div style="display:grid;grid-template-columns:1fr 60px 70px 70px 70px;gap:8px;padding:5px 0;border-bottom:2px solid var(--border);font-size:11px;color:var(--muted);font-weight:600">
+      <span>Segment</span><span>N</span><span>MAPE</span><span>MdnAPE</span><span>CI Cov</span>
+    </div>`;
+    const maxMape = Math.max(...r.slices.map(s => s.mape));
+    const rows = r.slices.map(s => {
+      const mapeColor = s.mape > r.overall_mape + 3 ? "var(--alarm)" : s.mape < r.overall_mape - 3 ? "var(--ok)" : "var(--text)";
+      return `<div style="display:grid;grid-template-columns:1fr 60px 70px 70px 70px;gap:8px;padding:5px 0;border-bottom:1px solid rgba(35,49,79,.4);font-size:12px;align-items:center">
+        <span>${esc(s.group)}</span>
+        <span style="color:var(--muted)">${s.n}</span>
+        <span style="font-weight:600;color:${mapeColor}">${s.mape}%</span>
+        <span style="color:var(--muted)">${s.median_ape}%</span>
+        <span style="color:${s.coverage_90 >= 0.85 ? 'var(--ok)' : 'var(--alarm)'}">${(s.coverage_90*100).toFixed(0)}%</span>
+      </div>`;
+    }).join("");
+    out.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="kpi">
+          <div class="box"><div class="v">${r.overall_mape}%</div><div class="l">Overall MAPE</div></div>
+          <div class="box"><div class="v">${r.max_disparity}%</div><div class="l">Max MAPE spread</div></div>
+          <div class="box"><div class="v" style="color:${flagColor}">${r.disparate_impact_flag ? '⚠ Flag' : '✓ Pass'}</div><div class="l">Disparate impact</div></div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Flag threshold: >5% MAPE spread across groups (CFPB fair lending standard)</div>
+      ${header}${rows}
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">Sampled 3,000 listings for speed. Highlighted groups where MAPE deviates >3% from overall.</div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Run fairness audit";
+  }
+}
+
+// ── Market Forecast ────────────────────────────────────────────────────────────
+async function loadForecast() {
+  const btn = document.getElementById("fc-btn");
+  const out = document.getElementById("fc-result");
+  btn.disabled = true; btn.textContent = "Forecasting…";
+  out.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:10px 0" class="loading-dots">Fitting trend + seasonality</div>`;
+  try {
+    const city   = document.getElementById("fc-city").value;
+    const months = document.getElementById("fc-months").value;
+    const r = await j(`/v1/market/forecast?city=${encodeURIComponent(city)}&months=${months}`);
+
+    const trendColor = r.price_trend === "rising" ? "var(--alarm)" : r.price_trend === "declining" ? "var(--ok)" : "var(--warn)";
+    const maxFc = Math.max(...r.points.map(p => p.upper));
+    const minFc = Math.min(...r.points.map(p => p.lower));
+    const range = maxFc - minFc || 1;
+
+    // Simple bar chart — height proportional to forecast vs range
+    const bars = r.points.map(p => {
+      const h = Math.max(6, Math.round((p.forecast - minFc) / range * 80));
+      return `<div class="forecast-bar-wrap">
+        <div style="font-size:9px;color:var(--ok);text-align:center;margin-bottom:2px">${money(p.upper).replace('$','')}</div>
+        <div class="forecast-bar" style="height:${h}px" title="${p.label}: ${money(p.forecast)}"></div>
+        <div style="font-size:9px;color:var(--alarm);text-align:center;margin-top:2px">${money(p.lower).replace('$','')}</div>
+        <div class="forecast-label">${esc(p.label)}</div>
+      </div>`;
+    }).join("");
+
+    const rows = r.points.map(p => `
+      <tr>
+        <td><b>${esc(p.label)}</b></td>
+        <td><b>${money(p.forecast)}</b></td>
+        <td style="color:var(--ok)">${money(p.lower)}</td>
+        <td style="color:var(--alarm)">${money(p.upper)}</td>
+      </tr>`).join("");
+
+    out.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
+        <span class="trend-badge ${r.price_trend}">${r.price_trend === 'rising' ? '↑' : r.price_trend === 'declining' ? '↓' : '→'} ${esc(r.price_trend)}</span>
+        <span style="font-size:13px">Baseline: <b>${money(r.baseline_price)}</b></span>
+        <span style="font-size:12px;color:var(--muted)">${r.trend_pct_monthly > 0 ? '+' : ''}${r.trend_pct_monthly.toFixed(2)}% / month trend</span>
+      </div>
+      <div class="forecast-chart" style="margin-top:16px;margin-bottom:30px">${bars}</div>
+      <table style="margin-top:8px">
+        <thead><tr><th>Month</th><th>Forecast</th><th style="color:var(--ok)">90% PI Lower</th><th style="color:var(--alarm)">90% PI Upper</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+        Linear trend + NAR seasonal adjustments. PI widens √horizon. In production: trained on actual monthly transaction time series.
+      </div>`;
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--alarm);font-size:13px">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Generate forecast";
   }
 }
 

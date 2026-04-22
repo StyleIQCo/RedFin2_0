@@ -137,6 +137,89 @@ class NLSearchResponse(BaseModel):
     request_id: str
 
 
+# ---------- AVM Calibration ----------
+class CalibrationBucket(BaseModel):
+    label: str
+    n: int
+    coverage: float     # actual fraction of true prices within CI
+    target: float       # nominal CI level (e.g. 0.90)
+    well_calibrated: bool
+
+
+class CalibrationResponse(BaseModel):
+    overall_coverage: float
+    target_coverage: float
+    is_well_calibrated: bool
+    mape: float
+    median_ape: float
+    buckets: List[CalibrationBucket]      # by city / property_type / price_tier
+    reliability_points: List[dict]        # [{predicted_conf, actual_conf}]
+    n_total: int
+    request_id: str
+
+
+# ---------- What-If Price Sensitivity ----------
+class WhatIfRequest(BaseModel):
+    features: HomeFeatures
+    perturbations: Optional[dict] = Field(
+        None,
+        description="Map of feature name → new value, e.g. {\"beds\": 4, \"sqft\": 2600}",
+        examples=[{"beds": 4, "sqft": 2600}],
+    )
+
+
+class WhatIfResult(BaseModel):
+    feature: str
+    original_value: float
+    new_value: float
+    original_price: float
+    new_price: float
+    delta_dollars: float
+    delta_pct: float
+
+
+class WhatIfResponse(BaseModel):
+    base_price: float
+    results: List[WhatIfResult]
+    request_id: str
+
+
+# ---------- Fairness Audit ----------
+class FairnessSlice(BaseModel):
+    group: str
+    n: int
+    mape: float
+    median_ape: float
+    mean_price: float
+    coverage_90: float
+
+
+class FairnessResponse(BaseModel):
+    overall_mape: float
+    slices: List[FairnessSlice]
+    max_disparity: float       # max MAPE spread across groups
+    disparate_impact_flag: bool
+    request_id: str
+
+
+# ---------- Market Forecast ----------
+class ForecastPoint(BaseModel):
+    month: int
+    label: str             # e.g. "2025-07"
+    forecast: float
+    lower: float
+    upper: float
+
+
+class ForecastResponse(BaseModel):
+    city: str
+    baseline_price: float
+    trend_pct_monthly: float
+    price_trend: str       # "rising" | "stable" | "declining"
+    points: List[ForecastPoint]
+    request_id: str
+
+
 # ---------- Market Intelligence Agent ----------
 class MarketIntelRequest(BaseModel):
     city: str = Field(..., examples=["Seattle"])
